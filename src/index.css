@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@layer utilities {
+  @media print {
+    @page { 
+      size: A4 portrait; 
+      margin: 0mm; 
+    }
+    body { 
+      background-color: white; 
+      -webkit-print-color-adjust: exact; 
+      print-color-adjust: exact; 
+    }
+  }
+}
+

@@ -1,0 +1,6 @@
+{
+  "name": "Remix: Scuba Diver Guide Diving Aware",
+  "description": "An interactive tool to analyze underwater photos and identify marine life for beginner divers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
