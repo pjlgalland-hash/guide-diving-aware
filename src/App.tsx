@@ -249,7 +249,8 @@ export default function App() {
           <div className="w-20 h-20 rounded-2xl bg-sky-50 flex items-center justify-center mb-6">
             <Waves className="w-10 h-10 text-sky-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Accès Sécurisé</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Accès Sécurisé</h1>
+          <p className="text-sky-600 text-xs font-bold uppercase tracking-widest mb-6">Le souffle de l'eau</p>
           <p className="text-slate-500 mb-8">Veuillez entrer le mot de passe pour utiliser le Guide de Plongée AI.</p>
           
           <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
@@ -258,13 +259,13 @@ export default function App() {
               placeholder="Mot de passe..."
               value={passwordAttempt}
               onChange={(e) => setPasswordAttempt(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 text-center text-lg font-medium tracking-widest"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003466]/20 focus:border-[#003466] text-center text-lg font-medium tracking-widest"
               autoFocus
             />
             {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
             <button
               type="submit"
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-4 rounded-xl transition-colors mt-2"
+              className="w-full bg-[#003466] hover:bg-[#00284d] text-white font-bold uppercase tracking-wider py-4 rounded-lg transition-all shadow-md active:scale-[0.98]"
             >
               Accéder à l'outil
             </button>
@@ -283,23 +284,30 @@ export default function App() {
         <div className="w-full xl:w-[420px] shrink-0 flex flex-col gap-8 print:hidden">
           <header className="flex flex-col gap-4">
             <div className="flex justify-between items-start">
-              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-sky-900/20 overflow-hidden border border-slate-200">
-                {/* Le logo devra être placé dans le dossier public/logo.png */}
-                <img src="/logo.png" alt="Diving Aware Logo" className="w-full h-full object-contain p-1" onError={(e) => {
-                  // Fallback icon si l'image n'est pas encore uploadée
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                }} />
-                <Waves className="w-8 h-8 text-sky-800 hidden" />
+              <div className="w-56 h-36 flex items-center justify-start overflow-hidden">
+                <img 
+                  src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+                  alt="Diving Aware Logo" 
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1">
+              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1 mt-4">
                 Déconnexion
               </button>
             </div>
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Guide de Plongée Diving Aware</h1>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Charge une photo sous-marine. Notre IA générera une fiche pédagogique imprimable pour débutants.
+              <div className="flex flex-col gap-1 mb-4 mt-[-10px]">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Guide de Plongée</h1>
+                <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
+              </div>
+              <div className="bg-white/80 backdrop-blur-sm border-l-[6px] border-[#003466] p-6 shadow-sm rounded-r-2xl mb-8">
+                <p className="text-slate-700 text-[15px] leading-relaxed italic font-serif">
+                  "Diving Aware est un compagnon de palanquée intelligent conçu pour les plongeurs conscients. En analysant vos clichés, il vous aide à identifier la biodiversité rencontrée et transforme vos observations en fiches pédagogiques détaillées. Un outil pour apprendre, respecter et partager la fragilité du monde sous-marin."
+                </p>
+              </div>
+              <p className="text-slate-500 text-sm leading-relaxed px-1">
+                Chargez une photo sous-marine ci-dessous pour initier l'analyse biologique.
               </p>
             </div>
           </header>
@@ -372,17 +380,17 @@ export default function App() {
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={analyzeImage}
               disabled={!imageFile || isAnalyzing}
               className={`
-                flex-1 py-4 rounded-2xl font-medium tracking-wide flex items-center justify-center gap-3 transition-all
+                flex-1 py-4 px-8 rounded-lg font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all
                 ${!imageFile 
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : isAnalyzing 
-                    ? 'bg-sky-500 text-white cursor-wait opacity-80'
-                    : 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/20 hover:shadow-sky-500/40 hover:-translate-y-0.5'}
+                    ? 'bg-slate-800 text-white cursor-wait opacity-80'
+                    : 'bg-[#003466] text-white hover:bg-[#00284d] active:scale-[0.98] shadow-md'}
               `}
             >
               {isAnalyzing ? (
@@ -400,7 +408,7 @@ export default function App() {
             {result && (
               <button
                 onClick={handlePrint}
-                className="py-4 px-6 rounded-2xl font-medium tracking-wide bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-sm"
+                className="py-4 px-8 rounded-lg font-bold uppercase tracking-wider text-sm bg-white border-2 border-[#003466] hover:bg-slate-50 text-[#003466] flex items-center justify-center transition-all shadow-sm"
                 title="Imprimer / Exporter en PDF"
               >
                 <Printer className="w-5 h-5" />
@@ -429,16 +437,17 @@ export default function App() {
             <div className="bg-white text-slate-800 shadow-2xl w-full max-w-[210mm] min-h-[297mm] p-[10mm] sm:p-[15mm] md:p-[20mm] mx-auto print:max-w-none print:w-full print:p-0 print:shadow-none print:ring-0 flex flex-col">
               
               {/* Header */}
-              <div className="flex items-center gap-4 mb-4 pb-4 border-b-2 border-sky-800">
-                <div className="w-12 h-12 rounded bg-white flex items-center justify-center shrink-0 overflow-hidden">
-                  <img src="/logo.png" alt="Diving Aware Logo" className="w-full h-full object-contain" onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                  }} />
-                  <Waves className="w-6 h-6 text-sky-800 hidden" />
+              <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-[#003466]">
+                <div className="w-24 h-24 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img 
+                    src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+                    alt="Diving Aware Logo" 
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-sky-900 tracking-tight flex-1 font-serif uppercase">
-                  Observer pour comprendre – Fiche Diving Aware
+                <h1 className="text-xl sm:text-2xl font-bold text-[#003466] tracking-tight flex-1 font-serif uppercase">
+                  Guide d’identification – Diving Aware
                 </h1>
               </div>
 
@@ -474,13 +483,13 @@ export default function App() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-bold text-slate-900 capitalize text-lg">{org.nom_commun}</h3>
-                            <span className="text-[12px] uppercase font-bold text-sky-800 bg-sky-200 px-2 py-0.5 rounded-full shadow-sm">
+                            <span className="text-[12px] uppercase font-bold text-white bg-[#003466] px-2 py-0.5 rounded shadow-sm">
                               {org.type}
                             </span>
                           </div>
                           <p className="text-sm text-slate-600 italic font-serif">
                             {org.nom_scientifique} 
-                            <span className="ml-2 text-xs not-italic font-sans text-sky-600 font-medium">({org.famille})</span>
+                            <span className="ml-2 text-xs not-italic font-sans text-[#003466] font-medium">({org.famille})</span>
                           </p>
                         </div>
                         <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm whitespace-nowrap">
@@ -490,26 +499,26 @@ export default function App() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Bloc Analyse */}
-                        <div className="bg-white p-3 rounded-xl border border-sky-50 shadow-sm">
-                          <p className="text-xs font-bold text-sky-900 mb-1 uppercase tracking-wider">🔬 Analyse Visuelle</p>
+                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">🔬 Analyse Visuelle</p>
                           <p className="text-xs leading-relaxed text-slate-600 mb-3">{org.observation}</p>
-                          <p className="text-xs font-bold text-sky-900 mb-1 uppercase tracking-wider">⚖️ Justification</p>
+                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">⚖️ Justification</p>
                           <p className="text-xs leading-relaxed text-slate-600">{org.justification}</p>
                         </div>
 
                         {/* Bloc Écologie */}
                         <div className="flex flex-col gap-3">
-                          <p className="text-xs text-sky-900 font-semibold bg-white border border-sky-100 py-1.5 px-3 rounded-lg w-max">
+                          <p className="text-xs text-white font-bold bg-[#003466] py-1.5 px-3 rounded w-max">
                             Règne : {org.regne}
                           </p>
-                          <p className="text-xs leading-relaxed text-slate-700 italic border-l-2 border-sky-300 pl-3">"{org.phrase_descriptive}"</p>
+                          <p className="text-xs leading-relaxed text-slate-700 italic border-l-2 border-[#003466] pl-3">"{org.phrase_descriptive}"</p>
                           <div className="flex flex-col gap-2 mt-auto text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
                             <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-sky-500 shrink-0" />
+                              <MapPin className="w-4 h-4 text-[#003466] shrink-0" />
                               <span><strong>Habitat :</strong> {org.habitat}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Utensils className="w-4 h-4 text-sky-500 shrink-0" />
+                              <Utensils className="w-4 h-4 text-[#003466] shrink-0" />
                               <span><strong>Alimentation :</strong> {org.alimentation}</span>
                             </div>
                           </div>
