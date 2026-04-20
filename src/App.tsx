@@ -182,7 +182,7 @@ export default function App() {
       };
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-1.5-flash',
         contents: { parts: [imagePart, textPart] },
         config: {
           temperature: 0.4,
