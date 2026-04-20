@@ -70,13 +70,40 @@ export default function App() {
   const [result, setResult] = useState<DiveAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [contextText, setContextText] = useState<string>('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordAttempt, setPasswordAttempt] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Check if already authenticated in local storage
+    const authStatus = localStorage.getItem('diving_aware_auth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+
     return () => {
       if (imagePreview) URL.revokeObjectURL(imagePreview);
     };
   }, [imagePreview]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordAttempt.toUpperCase() === 'AWARE2024') {
+      setIsAuthenticated(true);
+      localStorage.setItem('diving_aware_auth', 'true');
+      setError(null);
+    } else {
+      setError('Mot de passe incorrect.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('diving_aware_auth');
+    setResult(null);
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -196,7 +223,16 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Une erreur est survenue lors de l'analyse.");
+      let errorMessage = err.message || "Une erreur est survenue lors de l'analyse.";
+      
+      // Intercept quota / region errors from Google API
+      if (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        errorMessage = "Service indisponible (Erreur de Quota Google). Si vous êtes en Europe, l'API gratuite est bloquée. L'administrateur du site doit activer la facturation (Pay-as-you-go) sur Google AI Studio pour autoriser les analyses.";
+      } else if (errorMessage.includes('503')) {
+        errorMessage = "Les serveurs de Google sont actuellement surchargés. Veuillez réessayer dans quelques instants.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }
@@ -206,6 +242,38 @@ export default function App() {
     window.print();
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
+          <div className="w-20 h-20 rounded-2xl bg-sky-50 flex items-center justify-center mb-6">
+            <Waves className="w-10 h-10 text-sky-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Accès Sécurisé</h1>
+          <p className="text-slate-500 mb-8">Veuillez entrer le mot de passe pour utiliser le Guide de Plongée AI.</p>
+          
+          <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+            <input
+              type="password"
+              placeholder="Mot de passe..."
+              value={passwordAttempt}
+              onChange={(e) => setPasswordAttempt(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 text-center text-lg font-medium tracking-widest"
+              autoFocus
+            />
+            {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+            <button
+              type="submit"
+              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-4 rounded-xl transition-colors mt-2"
+            >
+              Accéder à l'outil
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/30 print:bg-white print:text-black">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-100/50 via-slate-50 to-slate-50 pointer-events-none print:hidden" />
@@ -214,14 +282,19 @@ export default function App() {
         {/* Left Column: UI & Inputs */}
         <div className="w-full xl:w-[420px] shrink-0 flex flex-col gap-8 print:hidden">
           <header className="flex flex-col gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-sky-900/20 overflow-hidden border border-slate-200">
-              {/* Le logo devra être placé dans le dossier public/logo.png */}
-              <img src="/logo.png" alt="Diving Aware Logo" className="w-full h-full object-contain p-1" onError={(e) => {
-                // Fallback icon si l'image n'est pas encore uploadée
-                (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-              }} />
-              <Waves className="w-8 h-8 text-sky-800 hidden" />
+            <div className="flex justify-between items-start">
+              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-sky-900/20 overflow-hidden border border-slate-200">
+                {/* Le logo devra être placé dans le dossier public/logo.png */}
+                <img src="/logo.png" alt="Diving Aware Logo" className="w-full h-full object-contain p-1" onError={(e) => {
+                  // Fallback icon si l'image n'est pas encore uploadée
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                }} />
+                <Waves className="w-8 h-8 text-sky-800 hidden" />
+              </div>
+              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1">
+                Déconnexion
+              </button>
             </div>
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Guide de Plongée Diving Aware</h1>
