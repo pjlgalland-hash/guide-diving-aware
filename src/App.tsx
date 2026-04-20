@@ -72,8 +72,6 @@ export default function App() {
   const [contextText, setContextText] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
-  const [fallbackApiKey, setFallbackApiKey] = useState('');
-  const [showFallbackInput, setShowFallbackInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -156,10 +154,9 @@ export default function App() {
       setResult(null);
       setError(null);
 
-      const apiKey = fallbackApiKey || process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        setShowFallbackInput(true);
-        throw new Error("Erreur: Clé API manquante. Veuillez entrer une clé de test ci-dessous.");
+        throw new Error("Erreur: Clé API manquante dans la configuration du serveur (Vercel).");
       }
 
       const ai = new GoogleGenAI({ apiKey });
@@ -228,11 +225,10 @@ export default function App() {
       console.error(err);
       let errorMessage = err.message || "Une erreur est survenue lors de l'analyse.";
       
-      // Intercept quota / region errors from Google API ONLY if we are using the server key
-      if (!fallbackApiKey && (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED'))) {
-        errorMessage = "Service indisponible via le serveur (Erreur de Quota Google Europe). Pour tester, veuillez utiliser le champ de clé API manuelle apparu ci-dessous.";
-        setShowFallbackInput(true);
-      } else if (!fallbackApiKey && errorMessage.includes('503')) {
+      // Intercept quota / region errors from Google API
+      if (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+        errorMessage = "Service temporairement indisponible (Quota Google atteint). Veuillez réessayer plus tard.";
+      } else if (errorMessage.includes('503')) {
         errorMessage = "Les serveurs de Google sont actuellement surchargés. Veuillez réessayer dans quelques instants.";
       }
       
@@ -416,23 +412,6 @@ export default function App() {
             <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 mt-4 text-red-600">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
               <p className="text-sm">{error}</p>
-            </div>
-          )}
-
-          {showFallbackInput && (
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-2xl mt-4">
-              <label htmlFor="fallbackKey" className="block text-sm font-bold text-orange-800 mb-2">
-                Mode Test : Entrez votre propre clé API Google
-              </label>
-              <input
-                type="password"
-                id="fallbackKey"
-                placeholder="AIzaSy..."
-                value={fallbackApiKey}
-                onChange={(e) => setFallbackApiKey(e.target.value)}
-                className="w-full bg-white border border-orange-300 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-sm mb-2"
-              />
-              <p className="text-xs text-orange-700">Cette clé ne sera pas sauvegardée et ne sert qu'à contourner le blocage européen de Vercel pour vos tests actuels.</p>
             </div>
           )}
         </div>
