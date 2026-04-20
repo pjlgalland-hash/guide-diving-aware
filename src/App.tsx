@@ -228,11 +228,11 @@ export default function App() {
       console.error(err);
       let errorMessage = err.message || "Une erreur est survenue lors de l'analyse.";
       
-      // Intercept quota / region errors from Google API
-      if (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+      // Intercept quota / region errors from Google API ONLY if we are using the server key
+      if (!fallbackApiKey && (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED'))) {
         errorMessage = "Service indisponible via le serveur (Erreur de Quota Google Europe). Pour tester, veuillez utiliser le champ de clé API manuelle apparu ci-dessous.";
         setShowFallbackInput(true);
-      } else if (errorMessage.includes('503')) {
+      } else if (!fallbackApiKey && errorMessage.includes('503')) {
         errorMessage = "Les serveurs de Google sont actuellement surchargés. Veuillez réessayer dans quelques instants.";
       }
       
