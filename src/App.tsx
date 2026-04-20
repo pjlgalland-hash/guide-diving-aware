@@ -179,7 +179,7 @@ export default function App() {
       };
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: { parts: [imagePart, textPart] },
         config: {
           temperature: 0.4,
