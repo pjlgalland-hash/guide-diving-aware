@@ -246,8 +246,13 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
-          <div className="w-20 h-20 rounded-2xl bg-sky-50 flex items-center justify-center mb-6">
-            <Waves className="w-10 h-10 text-sky-600" />
+          <div className="w-48 h-32 flex items-center justify-center mb-6 overflow-hidden">
+            <img 
+              src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+              alt="Diving Aware Logo" 
+              className="w-full h-full object-contain"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Accès Sécurisé</h1>
           <p className="text-sky-600 text-xs font-bold uppercase tracking-widest mb-6">Le souffle de l'eau</p>
