@@ -207,8 +207,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#071321] text-slate-200 font-sans selection:bg-cyan-500/30 print:bg-white print:text-black">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-[#071321] to-[#071321] pointer-events-none print:hidden" />
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/30 print:bg-white print:text-black">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-100/50 via-slate-50 to-slate-50 pointer-events-none print:hidden" />
       
       <div className="relative max-w-[1400px] mx-auto px-6 py-12 flex flex-col xl:flex-row gap-12 print:p-0 print:m-0 print:block">
         {/* Left Column: UI & Inputs */}
@@ -224,8 +224,8 @@ export default function App() {
               <Waves className="w-8 h-8 text-sky-800 hidden" />
             </div>
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white mb-2">Guide de Plongée Diving Aware</h1>
-              <p className="text-slate-400 text-sm leading-relaxed">
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-2">Guide de Plongée Diving Aware</h1>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 Charge une photo sous-marine. Notre IA générera une fiche pédagogique imprimable pour débutants.
               </p>
             </div>
@@ -238,8 +238,8 @@ export default function App() {
             onClick={() => !imagePreview && fileInputRef.current?.click()}
             className={`
               relative border-2 border-dashed rounded-3xl overflow-hidden transition-all duration-300
-              ${isDragging ? 'border-cyan-400 bg-cyan-400/5' : 'border-slate-700 hover:border-slate-600 hover:bg-slate-800/50'}
-              ${imagePreview ? 'border-none ring-1 ring-white/10 bg-black/40' : 'cursor-pointer'}
+              ${isDragging ? 'border-sky-400 bg-sky-50' : 'border-slate-300 hover:border-sky-300 hover:bg-slate-50 shadow-sm bg-white'}
+              ${imagePreview ? 'border-none ring-1 ring-black/5 bg-black/5' : 'cursor-pointer'}
               flex flex-col items-center justify-center aspect-[4/3]
             `}
           >
@@ -261,13 +261,13 @@ export default function App() {
                   className="w-full h-full object-cover" 
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-6 py-3 rounded-full text-white font-medium flex items-center gap-2 transition-colors"
+                    className="bg-white hover:bg-slate-50 shadow-lg px-6 py-3 rounded-full text-slate-800 font-medium flex items-center gap-2 transition-colors"
                   >
                     <Upload className="w-4 h-4" />
                     Changer l'image
@@ -276,17 +276,17 @@ export default function App() {
               </div>
             ) : (
               <div className="flex flex-col items-center text-center p-6">
-                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4 text-slate-400">
+                <div className="w-16 h-16 rounded-full bg-sky-50 flex items-center justify-center mb-4 text-sky-600">
                   <ImageIcon className="w-8 h-8" />
                 </div>
-                <p className="text-slate-300 font-medium mb-1">Cliquer ou glisser une photo</p>
+                <p className="text-slate-700 font-medium mb-1">Cliquer ou glisser une photo</p>
                 <p className="text-slate-500 text-xs">JPG, PNG jusqu'à 10MB</p>
               </div>
             )}
           </div>
 
           <div>
-            <label htmlFor="context" className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
               Indices ou remarques pour l'IA (optionnel)
             </label>
             <input
@@ -295,7 +295,7 @@ export default function App() {
               placeholder="Ex: Le truc noir est une bonellie..."
               value={contextText}
               onChange={(e) => setContextText(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all"
+              className="w-full bg-white shadow-sm border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-all"
             />
           </div>
 
@@ -306,10 +306,10 @@ export default function App() {
               className={`
                 flex-1 py-4 rounded-2xl font-medium tracking-wide flex items-center justify-center gap-3 transition-all
                 ${!imageFile 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : isAnalyzing 
-                    ? 'bg-cyan-600/50 text-white cursor-wait'
-                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 hover:-translate-y-0.5'}
+                    ? 'bg-sky-500 text-white cursor-wait opacity-80'
+                    : 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/20 hover:shadow-sky-500/40 hover:-translate-y-0.5'}
               `}
             >
               {isAnalyzing ? (
@@ -327,7 +327,7 @@ export default function App() {
             {result && (
               <button
                 onClick={handlePrint}
-                className="py-4 px-6 rounded-2xl font-medium tracking-wide bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-all shadow-lg"
+                className="py-4 px-6 rounded-2xl font-medium tracking-wide bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center justify-center transition-all shadow-sm"
                 title="Imprimer / Exporter en PDF"
               >
                 <Printer className="w-5 h-5" />
@@ -336,8 +336,8 @@ export default function App() {
           </div>
 
           {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 mt-4 text-red-200">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 mt-4 text-red-600">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
               <p className="text-sm">{error}</p>
             </div>
           )}
@@ -346,9 +346,9 @@ export default function App() {
         {/* Right Column: PDF Preview Area */}
         <div className="flex-1 flex justify-center items-start print:block print:w-full">
           {!result && !isAnalyzing ? (
-            <div className="flex-1 bg-slate-900/50 border border-white/5 shadow-2xl rounded-[32px] p-6 lg:p-12 min-h-[500px] flex flex-col items-center justify-center text-slate-500 text-center print:hidden">
-              <Waves className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg font-medium text-slate-400 mb-2">Prêt pour la plongée !</p>
+            <div className="flex-1 bg-white border border-slate-200 shadow-xl rounded-[32px] p-6 lg:p-12 min-h-[500px] flex flex-col items-center justify-center text-slate-500 text-center print:hidden">
+              <Waves className="w-16 h-16 mb-4 text-slate-200" />
+              <p className="text-lg font-medium text-slate-600 mb-2">Prêt pour la plongée !</p>
               <p className="max-w-xs text-sm">Télécharge une image et je formaterai une belle fiche A4 prête à imprimer.</p>
             </div>
           ) : result && imagePreview ? (
