@@ -25,15 +25,16 @@ interface DiveAnalysis {
 
 const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin et génère une fiche pédagogique Diving Aware (A4).
 
-⚠️ IMPORTANT : Génère tout le contenu (labels, descriptions, titres, tout) dans la langue demandée par l'utilisateur.
+⚠️ IMPORTANT : Génère TOUT le contenu dans la langue demandée par l'utilisateur (Français ou Anglais).
+- Traduis TOUS les labels, titres, catégories (y compris 'Type', 'Règne', 'Habitat', 'Alimentation'), et les valeurs (par ex: 'Poisson'/'Fish', 'Éponge'/'Sponge', 'Animal'/'Animal').
 
-Objectif : Identifier les organismes (même avec incertitude), pas seulement décrire la scène.
+Objectif : Identifier les organismes, pas seulement décrire la scène.
 
 1. ANALYSE D’IDENTIFICATION
 Pour chaque organisme visible :
-- Observation : indices visuels (forme, couleur, comportement).
-- Identification : Nom commun probable, Nom scientifique probable.
-- Confiance : Élevé / Moyen / Faible
+- Observation : indices visuels.
+- Identification : Nom commun, Nom scientifique.
+- Confiance : Élevé / Moyen / Faible (ou High / Medium / Low).
 - Justification : 1-2 phrases.
 
 2. CLASSIFICATION BIOLOGIQUE
@@ -504,7 +505,7 @@ export default function App() {
                           </p>
                         </div>
                         <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm whitespace-nowrap">
-                          Confiance : {org.confiance}
+                          {language === 'fr' ? 'Confiance' : 'Confidence'} : {org.confiance}
                         </div>
                       </div>
 
@@ -577,7 +578,9 @@ export default function App() {
               {/* Message Impact */}
               <div className="mt-6 text-center">
                 <p className="text-base sm:text-lg font-serif italic text-sky-800 font-medium px-4 py-3 bg-sky-50/50 rounded-lg inline-block border border-sky-100">
-                  "Sous l'eau, ce qui semble immobile est souvent vivant."
+                  {language === 'fr' 
+                    ? '"Sous l\'eau, ce qui semble immobile est souvent vivant."' 
+                    : '"Underwater, what seems immobile is often alive."'}
                 </p>
               </div>
 
