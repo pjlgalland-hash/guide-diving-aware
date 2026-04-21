@@ -47,7 +47,11 @@ Habitat, Mode de vie / alimentation.
 Cohérence forme/habitat/comportement.
 
 5. SYNTHÈSE
-Synthèse pédagogique et message clé.`;
+Synthèse pédagogique et message clé.
+
+6. URL & RÉFÉRENCE
+- Sur la fiche pédagogique, tu DOIS TOUJOURS afficher uniquement l'URL : https://diving-aware.com
+- Il est strictement INTERDIT d'utiliser ou d'afficher l'URL : guide-diving-aware.vercel.app`;
 
 export default function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
