@@ -278,15 +278,34 @@ export default function App() {
         <div className="w-full xl:w-[420px] shrink-0 flex flex-col gap-8 print:hidden">
           <header className="flex flex-col gap-4">
             <div className="flex justify-between items-start">
-              <div className="w-56 h-36 flex items-center justify-start overflow-hidden">
-                <img 
-                  src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
-                  alt="Diving Aware Logo" 
-                  className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
-                />
+              <div className="flex flex-col items-start gap-2">
+                <div className="w-56 h-36 flex items-center justify-start overflow-hidden">
+                  <img 
+                    src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+                    alt="Diving Aware Logo" 
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="w-full max-w-[200px]">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">{language === 'fr' ? 'Langue de la fiche' : 'Report language'}</label>
+                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => setLanguage('fr')}
+                      className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Français
+                    </button>
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      English
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1 mt-4">
+              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1">
                 {language === 'fr' ? 'Déconnexion' : 'Logout'}
               </button>
             </div>
@@ -363,21 +382,6 @@ export default function App() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{language === 'fr' ? 'Langue de la fiche' : 'Report language'}</label>
-            <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
-              <button
-                onClick={() => setLanguage('fr')}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Français
-              </button>
-              <button
-                onClick={() => setLanguage('en')}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                English
-              </button>
-            </div>
             
             <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
               {language === 'fr' ? "Indices ou remarques pour l'IA (optionnel)" : "Clues or remarks for the AI (optional)"}
