@@ -243,14 +243,14 @@ export default function App() {
               referrerPolicy="no-referrer"
             />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Accès Sécurisé</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">{language === 'fr' ? 'Accès Sécurisé' : 'Secure Access'}</h1>
           <p className="text-sky-600 text-xs font-bold uppercase tracking-widest mb-6">Le souffle de l'eau</p>
-          <p className="text-slate-500 mb-8">Veuillez entrer le mot de passe pour utiliser le Guide de Plongée AI.</p>
+          <p className="text-slate-500 mb-8">{language === 'fr' ? 'Veuillez entrer le mot de passe pour utiliser le Guide de Plongée AI.' : 'Please enter your password to use the AI Diving Guide.'}</p>
           
           <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
             <input
               type="password"
-              placeholder="Mot de passe..."
+              placeholder={language === 'fr' ? 'Mot de passe...' : 'Password...'}
               value={passwordAttempt}
               onChange={(e) => setPasswordAttempt(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003466]/20 focus:border-[#003466] text-center text-lg font-medium tracking-widest"
@@ -261,7 +261,7 @@ export default function App() {
               type="submit"
               className="w-full bg-[#003466] hover:bg-[#00284d] text-white font-bold uppercase tracking-wider py-4 rounded-lg transition-all shadow-md active:scale-[0.98]"
             >
-              Accéder à l'outil
+              {language === 'fr' ? 'Accéder à l\'outil' : 'Access Tool'}
             </button>
           </form>
         </div>
@@ -287,21 +287,23 @@ export default function App() {
                 />
               </div>
               <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1 mt-4">
-                Déconnexion
+                {language === 'fr' ? 'Déconnexion' : 'Logout'}
               </button>
             </div>
             <div>
               <div className="flex flex-col gap-1 mb-4 mt-[-10px]">
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Guide de Plongée</h1>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{language === 'fr' ? 'Guide de Plongée' : 'Diving Guide'}</h1>
                 <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
               </div>
               <div className="bg-white/80 backdrop-blur-sm border-l-[6px] border-[#003466] p-6 shadow-sm rounded-r-2xl mb-8">
                 <p className="text-slate-700 text-[15px] leading-relaxed italic font-serif">
-                  "Diving Aware est un compagnon de palanquée intelligent conçu pour les plongeurs conscients. En analysant vos clichés, il vous aide à identifier la biodiversité rencontrée et transforme vos observations en fiches pédagogiques détaillées. Un outil pour apprendre, respecter et partager la fragilité du monde sous-marin."
+                  {language === 'fr' 
+                    ? '"Diving Aware est un compagnon de palanquée intelligent conçu pour les plongeurs conscients. En analysant vos clichés, il vous aide à identifier la biodiversité rencontrée et transforme vos observations en fiches pédagogiques détaillées. Un outil pour apprendre, respecter et partager la fragilité du monde sous-marin."'
+                    : '"Diving Aware is an intelligent buddy designed for mindful divers. By analyzing your snapshots, it helps you identify the biodiversity encountered and transforms your observations into detailed educational fact sheets. A tool to learn, respect, and share the fragility of the underwater world."'}
                 </p>
               </div>
               <p className="text-slate-500 text-sm leading-relaxed px-1">
-                Chargez une photo sous-marine ci-dessous pour initier l'analyse biologique.
+                {language === 'fr' ? "Chargez une photo sous-marine ci-dessous pour initier l'analyse biologique." : "Upload an underwater photo below to initiate biological analysis."}
               </p>
             </div>
           </header>
@@ -345,7 +347,7 @@ export default function App() {
                     className="bg-white hover:bg-slate-50 shadow-lg px-6 py-3 rounded-full text-slate-800 font-medium flex items-center gap-2 transition-colors"
                   >
                     <Upload className="w-4 h-4" />
-                    Changer l'image
+                    {language === 'fr' ? "Changer l'image" : "Change image"}
                   </button>
                 </div>
               </div>
@@ -354,14 +356,14 @@ export default function App() {
                 <div className="w-16 h-16 rounded-full bg-sky-50 flex items-center justify-center mb-4 text-sky-600">
                   <ImageIcon className="w-8 h-8" />
                 </div>
-                <p className="text-slate-700 font-medium mb-1">Cliquer ou glisser une photo</p>
-                <p className="text-slate-500 text-xs">JPG, PNG jusqu'à 10MB</p>
+                <p className="text-slate-700 font-medium mb-1">{language === 'fr' ? 'Cliquer ou glisser une photo' : 'Click or drop a photo'}</p>
+                <p className="text-slate-500 text-xs">JPG, PNG {language === 'fr' ? "jusqu'à" : 'up to'} 10MB</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Langue de la fiche</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">{language === 'fr' ? 'Langue de la fiche' : 'Report language'}</label>
             <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
               <button
                 onClick={() => setLanguage('fr')}
@@ -378,12 +380,12 @@ export default function App() {
             </div>
             
             <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
-              Indices ou remarques pour l'IA (optionnel)
+              {language === 'fr' ? "Indices ou remarques pour l'IA (optionnel)" : "Clues or remarks for the AI (optional)"}
             </label>
             <input
               type="text"
               id="context"
-              placeholder="Ex: Le truc noir est une bonellie..."
+              placeholder={language === 'fr' ? "Ex: Le truc noir est une bonellie..." : "Ex: The black thing is a bonellia..."}
               value={contextText}
               onChange={(e) => setContextText(e.target.value)}
               className="w-full bg-white shadow-sm border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-all"
@@ -406,12 +408,12 @@ export default function App() {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Analyse en cours...
+                  {language === 'fr' ? 'Analyse en cours...' : 'Analyzing...'}
                 </>
               ) : (
                 <>
                   <Camera className="w-5 h-5" />
-                  Générer la Fiche
+                  {language === 'fr' ? 'Générer la Fiche' : 'Generate Report'}
                 </>
               )}
             </button>
@@ -439,8 +441,8 @@ export default function App() {
           {!result && !isAnalyzing ? (
             <div className="flex-1 bg-white border border-slate-200 shadow-xl rounded-[32px] p-6 lg:p-12 min-h-[500px] flex flex-col items-center justify-center text-slate-500 text-center print:hidden">
               <Waves className="w-16 h-16 mb-4 text-slate-200" />
-              <p className="text-lg font-medium text-slate-600 mb-2">Prêt pour la plongée !</p>
-              <p className="max-w-xs text-sm">Télécharge une image et je formaterai une belle fiche A4 prête à imprimer.</p>
+              <p className="text-lg font-medium text-slate-600 mb-2">{language === 'fr' ? 'Prêt pour la plongée !' : 'Ready to dive!'}</p>
+              <p className="max-w-xs text-sm">{language === 'fr' ? 'Télécharge une image et je formaterai une belle fiche A4 prête à imprimer.' : 'Upload an image and I will format a beautiful A4 report ready to print.'}</p>
             </div>
           ) : result && imagePreview ? (
             /* A4 PAGE RENDER */
@@ -594,8 +596,8 @@ export default function App() {
           ) : (
             <div className="flex-1 bg-white shadow-2xl rounded-[32px] p-12 min-h-[500px] flex flex-col items-center justify-center text-slate-500 print:hidden">
               <Loader2 className="w-16 h-16 mb-4 text-cyan-600 animate-spin" />
-              <p className="text-lg font-medium text-slate-600 mb-2">Création de la fiche A4...</p>
-              <p className="text-sm">Veuillez patienter pendant l'analyse de l'image.</p>
+              <p className="text-lg font-medium text-slate-600 mb-2">{language === 'fr' ? 'Création de la fiche A4...' : 'Creating A4 report...'}</p>
+              <p className="text-sm">{language === 'fr' ? "Veuillez patienter pendant l'analyse de l'image." : 'Please wait while analyzing the image.'}</p>
             </div>
           )}
         </div>
