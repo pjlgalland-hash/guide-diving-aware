@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
+import { db, auth } from './lib/firebase';
 
 interface DiveAnalysisOrganism {
     nom_commun: string;
@@ -589,7 +590,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 border border-slate-200 rounded-xl p-4 bg-sky-50 text-xs">
+              <div className="grid grid-cols-1 border border-slate-200 rounded-xl p-4 bg-sky-50 text-xs mt-6">
                  <p className="font-bold text-sky-900 mb-1">
                    {language === 'fr' ? "Différence animal / végétal :" : "Animal / Plant difference:"}
                  </p>
@@ -599,8 +600,37 @@ export default function App() {
                  </ul>
               </div>
 
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={async () => {
+                    if (!auth.currentUser) {
+                      alert('Veuillez vous connecter pour sauvegarder.');
+                      return;
+                    }
+                    try {
+                      const { addDoc, collection } = await import('firebase/firestore');
+                      await addDoc(collection(db, 'observations'), {
+                        userId: auth.currentUser.uid,
+                        nomCommun: result.organismes[0]?.nom_commun || 'Inconnu',
+                        nomScientifique: result.organismes[0]?.nom_scientifique || 'Inconnu',
+                        latitude: 0, // À implémenter plus tard
+                        longitude: 0, // À implémenter plus tard
+                        date: new Date().toISOString(),
+                      });
+                      alert('Observation sauvegardée !');
+                    } catch (e) {
+                      console.error(e);
+                      alert('Erreur lors de la sauvegarde.');
+                    }
+                  }}
+                  className="bg-[#003466] text-white px-6 py-2 rounded-lg font-bold uppercase text-sm hover:bg-[#00284d] transition-all"
+                >
+                  {language === 'fr' ? 'Sauvegarder cette observation' : 'Save this observation'}
+                </button>
+              </div>
+
               {/* Message Impact */}
-              <div className="mt-6 text-center">
+              <div className="mt-8 text-center">
                 <p className="text-base sm:text-lg font-serif italic text-sky-800 font-medium px-4 py-3 bg-sky-50/50 rounded-lg inline-block border border-sky-100">
                   {language === 'fr' 
                     ? '"Sous l\'eau, ce qui semble immobile est souvent vivant."' 
