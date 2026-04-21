@@ -23,44 +23,30 @@ interface DiveAnalysis {
   synthese: string;
 }
 
-const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin, puis transforme le résultat en fiche pédagogique PDF Diving Aware (A4).
+const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin et génère une fiche pédagogique Diving Aware (A4).
 
-⚠️ Objectif prioritaire : 
-Identifier les organismes (même avec incertitude), pas seulement décrire la scène.
+⚠️ IMPORTANT : Génère tout le contenu (labels, descriptions, titres, tout) dans la langue demandée par l'utilisateur.
 
-🔬 1. ANALYSE D’IDENTIFICATION (OBLIGATOIRE)
+Objectif : Identifier les organismes (même avec incertitude), pas seulement décrire la scène.
+
+1. ANALYSE D’IDENTIFICATION
 Pour chaque organisme visible :
+- Observation : indices visuels (forme, couleur, comportement).
+- Identification : Nom commun probable, Nom scientifique probable.
+- Confiance : Élevé / Moyen / Faible
+- Justification : 1-2 phrases.
 
-👉 Étape 1 : Observation précise
-Décris les indices visuels utiles à l’identification :
-- forme (allongée, massive, ramifiée…)
-- couleur (en tenant compte de la perte des rouges en profondeur)
-- comportement (posé, en banc, caché…)
-- interaction avec le milieu
+2. CLASSIFICATION BIOLOGIQUE
+Type (poisson, corail, etc.), Règne, Famille.
 
-👉 Étape 2 : Identification (même partielle)
-Tu dois proposer : Nom commun probable ET Nom scientifique probable (genre ou espèce)
-⚠️ Tu dois toujours proposer une hypothèse, sauf si totalement impossible → dans ce cas : "je ne sais pas"
+3. ÉCOLOGIE
+Habitat, Mode de vie / alimentation.
 
-👉 Étape 3 : Niveau de confiance
-Indique clairement : ✅ Élevé, ⚠️ Moyen, ou ❌ Faible
+4. VÉRIFICATION CRITIQUE
+Cohérence forme/habitat/comportement.
 
-👉 Étape 4 : Justification
-Explique en 1–2 phrases pourquoi tu proposes cette identification.
-
-🌿 2. CLASSIFICATION BIOLOGIQUE
-Pour chaque organisme : Type (poisson, corail, algue…), Règne (animal/végétal/autre), Famille ou groupe.
-
-🌍 3. ÉCOLOGIE (OBLIGATOIRE)
-Pour chaque organisme :
-👉 Lieu de vie : habitat (récif, sable...), position, zone géographique probable (et insérer dans la phrase descriptive du type : "(Nom scientifique) est une espèce largement répandue dans...").
-👉 Mode de vie / alimentation : carnivore / herbivore / filtreur / photosynthèse, etc.
-
-🧠 4. VÉRIFICATION CRITIQUE
-Vérifie la cohérence forme + habitat + comportement et signale toute incohérence éventuelle.
-
-📄 5. GÉNÉRATION DE LA FICHE PDF
-Structure les données pour remplir l'interface utilisateur Diving Aware avec la vue d'ensemble, la liste des organismes (avec leur bloc détaillé d'identification et écologie), la vérification critique et la synthèse pédagogique contenant le message clé.`;
+5. SYNTHÈSE
+Synthèse pédagogique et message clé.`;
 
 export default function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -470,7 +456,7 @@ export default function App() {
                   />
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-[#003466] tracking-tight flex-1 font-serif uppercase">
-                  Guide d’identification – Diving Aware
+                  {language === 'fr' ? 'Guide d’identification – Diving Aware' : 'Identification Guide – Diving Aware'}
                 </h1>
               </div>
 
@@ -486,7 +472,9 @@ export default function App() {
 
               <div className="grid grid-cols-1 gap-8 mb-6">
                 <div>
-                  <h2 className="text-lg font-bold text-sky-800 mb-2 uppercase tracking-wide border-l-4 border-sky-400 pl-3">Vue d'ensemble</h2>
+                  <h2 className="text-lg font-bold text-sky-800 mb-2 uppercase tracking-wide border-l-4 border-sky-400 pl-3">
+                    {language === 'fr' ? "Vue d'ensemble" : "Overview"}
+                  </h2>
                   <p className="text-sm leading-relaxed text-slate-700">{result.vue_ensemble}</p>
                 </div>
               </div>
@@ -495,7 +483,7 @@ export default function App() {
               <div className="mb-8">
                 <h2 className="text-lg font-bold text-sky-800 mb-4 uppercase tracking-wide border-l-4 border-sky-400 pl-3 flex items-center gap-2">
                   <Info className="w-5 h-5 text-sky-600" />
-                  Identification Biologique
+                  {language === 'fr' ? "Identification Biologique" : "Biological Identification"}
                 </h2>
                 <div className="grid grid-cols-1 gap-6">
                   {result.organismes.map((org, index) => (
@@ -523,16 +511,20 @@ export default function App() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Bloc Analyse */}
                         <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">🔬 Analyse Visuelle</p>
+                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">
+                            {language === 'fr' ? "🔬 Analyse Visuelle" : "🔬 Visual Analysis"}
+                          </p>
                           <p className="text-xs leading-relaxed text-slate-600 mb-3">{org.observation}</p>
-                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">⚖️ Justification</p>
+                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">
+                            {language === 'fr' ? "⚖️ Justification" : "⚖️ Justification"}
+                          </p>
                           <p className="text-xs leading-relaxed text-slate-600">{org.justification}</p>
                         </div>
 
                         {/* Bloc Écologie */}
                         <div className="flex flex-col gap-3">
                           <p className="text-xs text-white font-bold bg-[#003466] py-1.5 px-3 rounded w-max">
-                            Règne : {org.regne}
+                            {language === 'fr' ? "Règne" : "Kingdom"} : {org.regne}
                           </p>
                           <p className="text-xs leading-relaxed text-slate-700 italic border-l-2 border-[#003466] pl-3">"{org.phrase_descriptive}"</p>
                           <div className="flex flex-col gap-2 mt-auto text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
@@ -560,23 +552,25 @@ export default function App() {
               <div className="mt-auto grid grid-cols-1 gap-6 bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-6">
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <span className="text-sky-600 text-lg">💡</span> Vérification Critique
+                    <span className="text-sky-600 text-lg">💡</span> {language === 'fr' ? "Vérification Critique" : "Critical Verification"}
                   </h2>
                   <p className="text-xs leading-relaxed text-slate-700">{result.verification_critique}</p>
                 </div>
                 <div className="border-t border-slate-200 pt-4">
                   <h2 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <span className="text-sky-600 text-lg">🎯</span> Synthèse
+                    <span className="text-sky-600 text-lg">🎯</span> {language === 'fr' ? "Synthèse" : "Synthesis"}
                   </h2>
                   <p className="text-xs leading-relaxed text-slate-700">{result.synthese}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 border border-slate-200 rounded-xl p-4 bg-sky-50 text-xs">
-                 <p className="font-bold text-sky-900 mb-1">Différence animal / végétal :</p>
+                 <p className="font-bold text-sky-900 mb-1">
+                   {language === 'fr' ? "Différence animal / végétal :" : "Animal / Plant difference:"}
+                 </p>
                  <ul className="list-disc list-inside text-slate-700 ml-1 space-y-0.5">
-                   <li><strong>Animal :</strong> mange de la nourriture, parfois bouge.</li>
-                   <li><strong>Végétal / algue :</strong> utilise la lumière (photosynthèse).</li>
+                   <li><strong>{language === 'fr' ? "Animal" : "Animal"} :</strong> {language === 'fr' ? "mange de la nourriture, parfois bouge." : "eats food, sometimes moves."}</li>
+                   <li><strong>{language === 'fr' ? "Végétal / algue" : "Plant / Algae"} :</strong> {language === 'fr' ? "utilise la lumière (photosynthèse)." : "uses light (photosynthesis)."}</li>
                  </ul>
               </div>
 
