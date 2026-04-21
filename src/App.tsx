@@ -234,7 +234,21 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
+        <div className="relative bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
+          <div className="absolute top-6 right-6 flex bg-slate-100 p-1 rounded-lg">
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              EN
+            </button>
+          </div>
           <div className="w-48 h-32 flex items-center justify-center mb-6 overflow-hidden">
             <img 
               src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
