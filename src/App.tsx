@@ -72,6 +72,7 @@ export default function App() {
   const [contextText, setContextText] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -170,6 +171,7 @@ export default function App() {
       };
       
       let fullPrompt = PROMPT;
+      fullPrompt += `\n\nRéponds exclusivement en ${language === 'fr' ? 'français' : 'anglais'}.`;
       if (contextText.trim()) {
         fullPrompt += `\n\nContexte ou notes du plongeur : ${contextText}`;
       }
@@ -372,6 +374,22 @@ export default function App() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Langue de la fiche</label>
+            <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Français
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                English
+              </button>
+            </div>
+            
             <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
               Indices ou remarques pour l'IA (optionnel)
             </label>
