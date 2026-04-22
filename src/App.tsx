@@ -444,9 +444,9 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-[40px] shadow-2xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
-          <div className="w-56 h-36 flex items-center justify-center overflow-hidden mb-6">
+      <div className="min-h-screen bg-[#FDFDFD] text-slate-800 font-sans flex items-center justify-center p-6">
+        <div className="bg-white p-10 rounded-[48px] shadow-sm border border-slate-100 max-w-md w-full flex flex-col items-center text-center">
+          <div className="w-48 h-32 flex items-center justify-center overflow-hidden mb-8">
             <img 
               src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
               alt="Diving Aware Logo" 
@@ -470,12 +470,12 @@ export default function App() {
             </button>
           </div>
 
-          <h2 className="text-3xl font-black text-slate-900 mb-4 leading-tight italic uppercase tracking-tighter">
+          <h2 className="font-display text-4xl font-light text-slate-900 mb-6 leading-[1.1] tracking-tight">
             {language === 'fr' 
-              ? 'Identifiez la biodiversité de vos plongées' 
-              : 'Identify your dives biodiversity'}
+              ? <>Identifiez la <b>biodiversité</b> de vos plongées</>
+              : <>Identify your dives <b>biodiversity</b></>}
           </h2>
-          <p className="text-slate-500 mb-10 text-lg leading-relaxed font-medium">
+          <p className="text-slate-400 mb-12 text-base leading-relaxed font-light tracking-wide max-w-[280px]">
             {language === 'fr'
               ? 'Connectez-vous pour générer vos fiches d\'identification personnalisées.'
               : 'Sign in to generate your personalized identification guides.'}
@@ -517,7 +517,7 @@ export default function App() {
                   <button
                     type="submit"
                     disabled={isLoggingIn}
-                    className={`w-full bg-[#003466] text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-black hover:scale-[1.02] active:scale-95'}`}
+                    className={`w-full bg-[#003466] text-white py-4 rounded-2xl font-medium tracking-wide transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/10 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-black hover:-translate-y-0.5 active:translate-y-0'}`}
                   >
                     {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
                     {language === 'fr' ? 'Recevoir mon lien de connexion' : 'Send sign-in link'}
@@ -552,7 +552,7 @@ export default function App() {
                         setIsLoggingIn(false);
                       }
                     }}
-                    className={`w-full bg-white border-2 border-slate-100 text-slate-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-sm ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-slate-50 hover:border-slate-200 hover:scale-[1.01] active:scale-95'}`}
+                    className={`w-full bg-white border border-slate-100 text-slate-600 py-4 rounded-2xl font-medium tracking-wide transition-all flex items-center justify-center gap-3 shadow-sm ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-slate-50 hover:border-slate-200 hover:-translate-y-0.5 active:translate-y-0'}`}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -572,7 +572,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setShowEmailInput(true)}
-                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-slate-900/10 hover:bg-black hover:scale-[1.02] active:scale-95"
+                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-medium tracking-wide transition-all flex items-center justify-center gap-3 shadow-lg shadow-slate-900/5 hover:bg-black hover:-translate-y-0.5 active:translate-y-0"
                   >
                     <Mail className="w-5 h-5" />
                     {language === 'fr' ? 'Se connecter par email' : 'Sign in with email'}
