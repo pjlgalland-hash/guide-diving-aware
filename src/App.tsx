@@ -497,7 +497,7 @@ export default function App() {
                   <div className="space-y-6">
                     <section>
                       <h3 className="text-slate-900 font-bold text-base mb-2">1. Éditeur du site</h3>
-                      <p>Diving Aware est un projet de Pierre-Jean Galland. Pour toute demande : pjl.galland@gmail.com.</p>
+                      <p>Diving Aware est un projet de Philippe Galland. Pour toute demande : pjl.galland@gmail.com.</p>
                     </section>
                     <section>
                       <h3 className="text-slate-900 font-bold text-base mb-2">2. Hébergement</h3>
