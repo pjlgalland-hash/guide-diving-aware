@@ -1,14 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock, CheckCircle2 } from 'lucide-react';
+import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock, CheckCircle2, Mail, ChevronRight } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { db, auth, googleProvider, UserStats } from './lib/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  User,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { loadStripe } from '@stripe/stripe-js';
 import { motion, AnimatePresence } from 'motion/react';
 
 const DAILY_QUOTA_LIMIT = 3;
 const ADMIN_EMAIL = 'pjl.galland@gmail.com';
+const COLLABORATORS = [
+  ADMIN_EMAIL,
+  'Py.buri@hotmail.com',
+  // Ajoutez les emails de vos collaborateurs ici :
+  // 'email2@gmail.com',
+  // 'email3@gmail.com'
+];
+
+const isTeamMember = (email?: string | null) => email ? COLLABORATORS.includes(email) : false;
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -135,6 +152,24 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Handle Magic Link sign-in
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) {
+        email = window.prompt('Veuillez confirmer votre email pour terminer la connexion :');
+      }
+      if (email) {
+        signInWithEmailLink(auth, email, window.location.href)
+          .then(() => {
+            window.localStorage.removeItem('emailForSignIn');
+          })
+          .catch((error) => {
+            console.error("Erreur lien magique:", error);
+            alert("Le lien de connexion a expiré ou a déjà été utilisé.");
+          });
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -148,6 +183,7 @@ export default function App() {
   }, []);
 
   const fetchUserUsage = async (userId: string) => {
+    console.log("Fetching usage for:", userId);
     try {
       const docRef = doc(db, 'users', userId, 'stats', 'usage');
       const docSnap = await getDoc(docRef);
@@ -155,24 +191,28 @@ export default function App() {
 
       if (docSnap.exists()) {
         const data = docSnap.data() as UserStats;
+        console.log("Usage found:", data);
         
         // If payment was successful, update Firestore (Simplified for now)
         if (paymentStatus === 'success' && !data.isPremium) {
+          console.log("Updating to premium...");
           await updateDoc(docRef, { isPremium: true });
           data.isPremium = true;
         }
 
         if (data.lastAnalysisDate !== today) {
+          console.log("New day detected, resetting local count");
           setUserUsage({ ...data, dailyCount: 0, lastAnalysisDate: today });
           setIsQuotaExceeded(false);
         } else {
           setUserUsage(data);
-          // Check quota if NOT admin and NOT premium
-          if (auth.currentUser?.email !== ADMIN_EMAIL && !data.isPremium && data.dailyCount >= DAILY_QUOTA_LIMIT) {
+          // Check quota if NOT team and NOT premium
+          if (!isTeamMember(auth.currentUser?.email) && !data.isPremium && data.dailyCount >= DAILY_QUOTA_LIMIT) {
             setIsQuotaExceeded(true);
           }
         }
       } else {
+        console.log("No usage found, creating initial doc");
         // Success payment but no doc yet
         const isPremium = paymentStatus === 'success';
         const newData: UserStats = { userId, dailyCount: 0, lastAnalysisDate: today, isPremium };
@@ -181,12 +221,13 @@ export default function App() {
         setIsQuotaExceeded(false);
       }
     } catch (e) {
+      console.error("Détails de l'erreur Firestore:", e);
       console.error("Erreur lors de la récupération du quota:", e);
     }
   };
 
   const incrementUsage = async (userId: string) => {
-    if (auth.currentUser?.email === ADMIN_EMAIL || userUsage?.isPremium || userUsage?.isDiveCenter) return; 
+    if (isTeamMember(auth.currentUser?.email) || userUsage?.isPremium || userUsage?.isDiveCenter) return; 
 
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -267,7 +308,7 @@ export default function App() {
   const analyzeImage = async () => {
     if (!imageFile || !user) return;
 
-    if (user.email !== ADMIN_EMAIL && !userUsage?.isPremium && !userUsage?.isDiveCenter && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
+    if (!isTeamMember(user.email) && !userUsage?.isPremium && !userUsage?.isDiveCenter && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
       setIsQuotaExceeded(true);
       return;
     }
@@ -375,6 +416,31 @@ export default function App() {
   };
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [emailForSignIn, setEmailForSignIn] = useState('');
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailForSignIn) return;
+
+    setIsLoggingIn(true);
+    const actionCodeSettings = {
+      url: window.location.href, // Revenir ici après le clic
+      handleCodeInApp: true,
+    };
+
+    try {
+      await sendSignInLinkToEmail(auth, emailForSignIn, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', emailForSignIn);
+      setEmailSent(true);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Erreur d'envoi: ${err.message}`);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -404,40 +470,117 @@ export default function App() {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">
-            {language === 'fr' ? 'Diving Aware' : 'Diving Aware'}
-          </h1>
-          
-          <p className="text-slate-600 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-black text-slate-900 mb-4 leading-tight italic uppercase tracking-tighter">
             {language === 'fr' 
-              ? "Connectez-vous pour découvrir la biodiversité marine de vos plongées." 
-              : "Sign in to discover the marine biodiversity of your dives."}
+              ? 'Identifiez la biodiversité de vos plongées' 
+              : 'Identify your dives biodiversity'}
+          </h2>
+          <p className="text-slate-500 mb-10 text-lg leading-relaxed font-medium">
+            {language === 'fr'
+              ? 'Connectez-vous pour générer vos fiches d\'identification personnalisées.'
+              : 'Sign in to generate your personalized identification guides.'}
           </p>
 
-          <button
-            disabled={isLoggingIn}
-            onClick={async () => {
-              setIsLoggingIn(true);
-              try {
-                await signInWithPopup(auth, googleProvider);
-              } catch (err: any) {
-                console.error("Erreur de connexion:", err);
-                if (err.code === 'auth/popup-blocked') {
-                  alert(language === 'fr' 
-                    ? "Le pop-up de connexion a été bloqué par votre navigateur. Veuillez autoriser les pop-ups ou essayer d'ouvrir l'application dans un nouvel onglet." 
-                    : "The sign-in popup was blocked by your browser. Please allow popups or try opening the app in a new tab.");
-                } else {
-                  alert(`Erreur de connexion: ${err.message}`);
-                }
-              } finally {
-                setIsLoggingIn(false);
-              }
-            }}
-            className={`w-full bg-[#003466] text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-[#00284d] hover:scale-[1.02] active:scale-95'}`}
-          >
-            {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : <Waves className="w-5 h-5" />}
-            {language === 'fr' ? 'Se connecter avec Google' : 'Sign in with Google'}
-          </button>
+          {emailSent ? (
+            <div className="bg-sky-50 p-8 rounded-[32px] border border-sky-100 text-center space-y-4">
+              <div className="w-16 h-16 bg-sky-500 text-white rounded-full flex items-center justify-center mx-auto shadow-lg shadow-sky-200">
+                <Mail className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Email envoyé !</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {language === 'fr'
+                  ? `Un lien de connexion a été envoyé à ${emailForSignIn}. Vérifiez votre boîte de réception (et vos spams).`
+                  : `A sign-in link has been sent to ${emailForSignIn}. Check your inbox (and spam).`}
+              </p>
+              <button 
+                onClick={() => setEmailSent(false)}
+                className="text-sky-600 text-sm font-bold hover:underline"
+              >
+                {language === 'fr' ? 'Utiliser une autre méthode' : 'Use another method'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4 w-full">
+              {showEmailInput ? (
+                <form onSubmit={handleEmailSignIn} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <div className="relative">
+                    <input 
+                      type="email" 
+                      required
+                      placeholder={language === 'fr' ? 'Votre adresse email' : 'Your email address'}
+                      value={emailForSignIn}
+                      onChange={(e) => setEmailForSignIn(e.target.value)}
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-sky-500/10 focus:border-[#003466] outline-none transition-all font-medium text-lg"
+                    />
+                    <Mail className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300" />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn}
+                    className={`w-full bg-[#003466] text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-black hover:scale-[1.02] active:scale-95'}`}
+                  >
+                    {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
+                    {language === 'fr' ? 'Recevoir mon lien de connexion' : 'Send sign-in link'}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setShowEmailInput(false)}
+                    className="w-full text-slate-400 text-sm font-bold py-2 hover:text-slate-600 transition-colors"
+                  >
+                    {language === 'fr' ? 'Annuler' : 'Cancel'}
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={isLoggingIn}
+                    onClick={async () => {
+                      setIsLoggingIn(true);
+                      try {
+                        await signInWithPopup(auth, googleProvider);
+                      } catch (err: any) {
+                        console.error("Erreur de connexion:", err);
+                        if (err.code === 'auth/popup-blocked') {
+                          alert(language === 'fr' 
+                            ? "Le pop-up de connexion a été bloqué par votre navigateur. Veuillez autoriser les pop-ups ou essayer d'ouvrir l'application dans un nouvel onglet." 
+                            : "The sign-in popup was blocked by your browser. Please allow popups or try opening the app in a new tab.");
+                        } else {
+                          alert(`Erreur de connexion: ${err.message}`);
+                        }
+                      } finally {
+                        setIsLoggingIn(false);
+                      }
+                    }}
+                    className={`w-full bg-white border-2 border-slate-100 text-slate-700 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-sm ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-slate-50 hover:border-slate-200 hover:scale-[1.01] active:scale-95'}`}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.61z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    {language === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}
+                  </button>
+
+                  <div className="flex items-center gap-4 my-6 w-full">
+                    <div className="h-px bg-slate-100 flex-1"></div>
+                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{language === 'fr' ? 'OU' : 'OR'}</span>
+                    <div className="h-px bg-slate-100 flex-1"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailInput(true)}
+                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-slate-900/10 hover:bg-black hover:scale-[1.02] active:scale-95"
+                  >
+                    <Mail className="w-5 h-5" />
+                    {language === 'fr' ? 'Se connecter par email' : 'Sign in with email'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           
           <div className="mt-10 pt-6 border-t border-slate-100 w-full">
             <p className="text-[11px] text-slate-400 mb-4 font-medium uppercase tracking-widest">
@@ -604,7 +747,7 @@ export default function App() {
                   <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{language === 'fr' ? 'Guide de Plongée' : 'Diving Guide'}</h1>
                   <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
                 </div>
-                {user.email !== ADMIN_EMAIL && !userUsage?.isPremium && (
+                {!isTeamMember(user.email) && !userUsage?.isPremium && (
                   <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
                     <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -612,12 +755,12 @@ export default function App() {
                     </span>
                   </div>
                 )}
-                {(user.email === ADMIN_EMAIL || userUsage?.isPremium || userUsage?.isDiveCenter) && (
+                {(isTeamMember(user.email) || userUsage?.isPremium || userUsage?.isDiveCenter) && (
                   <div className="bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
                     <CheckCircle2 className="w-3 h-3 text-sky-700" />
                     <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">
-                      {user.email === ADMIN_EMAIL 
-                        ? 'Accès Admin Illimité' 
+                      {isTeamMember(user.email) 
+                        ? (language === 'fr' ? 'Accès Équipe Illimité' : 'Unlimited Team Access')
                         : userUsage?.isDiveCenter 
                           ? (language === 'fr' ? 'Offre Centre de Plongée' : 'Dive Center Plan')
                           : (language === 'fr' ? 'Offre Passionnée Active' : 'Premium Plan Active')}

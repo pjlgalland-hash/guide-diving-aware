@@ -16,7 +16,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'pjl.galland@gmail.com';
+      return isSignedIn() && (
+        request.auth.token.email == 'pjl.galland@gmail.com' ||
+        request.auth.token.email == 'Py.buri@hotmail.com'
+      );
     }
 
     // 2. User Stats Protection
@@ -26,21 +29,19 @@ service cloud.firestore {
       // Creating the doc for the first time
       allow create: if isOwner(userId) 
         && request.resource.data.userId == userId
-        && request.resource.data.dailyCount == 0
-        && request.resource.data.isPremium == false
-        && request.resource.data.isDiveCenter == false;
+        && request.resource.data.dailyCount <= 1;
 
       // Updating stats
       allow update: if (isOwner(userId) || isAdmin()) 
         && (
-          // Case 1: Simple increment of count (Standard user)
+          // Case 1: Simple increment OR reset to 1 for new day
           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dailyCount', 'lastAnalysisDate'])
-           && request.resource.data.dailyCount == resource.data.dailyCount + 1)
+           && (request.resource.data.dailyCount == resource.data.dailyCount + 1 || request.resource.data.dailyCount == 1))
           ||
-          // Case 2: Update center branding (Dive Center user)
-          (resource.data.isDiveCenter == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['centerName', 'centerLogoUrl']))
+          // Case 2: Update premium status or center branding
+          (request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'isDiveCenter', 'centerName', 'centerLogoUrl']))
           ||
-          // Case 3: Admin override (for support)
+          // Case 3: Admin override
           isAdmin()
         );
     }
