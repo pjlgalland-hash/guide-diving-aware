@@ -307,10 +307,41 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
-          <Waves className="w-16 h-16 text-cyan-600 mb-6" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Diving Aware</h1>
-          <p className="text-slate-600 mb-8">Connectez-vous pour découvrir la biodiversité marine locale.</p>
+        <div className="bg-white p-8 rounded-[40px] shadow-2xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
+          <div className="w-56 h-36 flex items-center justify-center overflow-hidden mb-6">
+            <img 
+              src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+              alt="Diving Aware Logo" 
+              className="w-full h-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          
+          <div className="flex bg-slate-100 p-1 rounded-lg mb-8 w-32">
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              EN
+            </button>
+          </div>
+
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            {language === 'fr' ? 'Diving Aware' : 'Diving Aware'}
+          </h1>
+          
+          <p className="text-slate-600 mb-8 leading-relaxed">
+            {language === 'fr' 
+              ? "Connectez-vous pour découvrir la biodiversité marine de vos plongées." 
+              : "Sign in to discover the marine biodiversity of your dives."}
+          </p>
+
           <button
             disabled={isLoggingIn}
             onClick={async () => {
@@ -323,8 +354,6 @@ export default function App() {
                   alert(language === 'fr' 
                     ? "Le pop-up de connexion a été bloqué par votre navigateur. Veuillez autoriser les pop-ups ou essayer d'ouvrir l'application dans un nouvel onglet." 
                     : "The sign-in popup was blocked by your browser. Please allow popups or try opening the app in a new tab.");
-                } else if (err.code === 'auth/operation-not-allowed') {
-                  alert("L'authentification Google n'est pas encore activée dans votre console Firebase.");
                 } else {
                   alert(`Erreur de connexion: ${err.message}`);
                 }
@@ -332,22 +361,25 @@ export default function App() {
                 setIsLoggingIn(false);
               }
             }}
-            className={`w-full bg-[#003466] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-[#00284d]'}`}
+            className={`w-full bg-[#003466] text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/20 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-[#00284d] hover:scale-[1.02] active:scale-95'}`}
           >
-            {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : <Waves className="w-5 h-5" />}
             {language === 'fr' ? 'Se connecter avec Google' : 'Sign in with Google'}
           </button>
           
-          <div className="mt-8 pt-6 border-t border-slate-100 w-full">
-            <p className="text-xs text-slate-400 mb-4">
+          <div className="mt-10 pt-6 border-t border-slate-100 w-full">
+            <p className="text-[11px] text-slate-400 mb-4 font-medium uppercase tracking-widest">
               {language === 'fr' 
-                ? `En vous connectant, vous bénéficiez de ${DAILY_QUOTA_LIMIT} analyses gratuites par jour.` 
-                : `By signing in, you get ${DAILY_QUOTA_LIMIT} free analyses per day.`}
+                ? `Inclus : ${DAILY_QUOTA_LIMIT} analyses / jour` 
+                : `Included: ${DAILY_QUOTA_LIMIT} analyses / day`}
             </p>
-            <div className="bg-sky-50 p-3 rounded-lg text-[10px] text-sky-700 leading-tight">
-              {language === 'fr'
-                ? "💡 Astuce : Si rien ne se passe, cliquez sur la fleche en haut à droite pour ouvrir l'application dans un nouvel onglet."
-                : "💡 Tip: If nothing happens, click the arrow in the top right corner to open the app in a new tab."}
+            <div className="bg-sky-50 p-4 rounded-2xl text-[11px] text-sky-700 leading-normal flex items-start gap-3 text-left">
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>
+                {language === 'fr'
+                  ? "Si rien ne se passe, ouvrez l'application dans un nouvel onglet via la flèche en haut à droite."
+                  : "If nothing happens, open the app in a new tab using the arrow in the top right corner."}
+              </p>
             </div>
           </div>
         </div>
