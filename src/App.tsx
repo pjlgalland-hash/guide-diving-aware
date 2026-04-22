@@ -94,34 +94,40 @@ Vérifie si l'image est aquatique/sous-marine. Si non, réponds est_aquatique: f
 - ÉTAPE 2 : Correction chromatique mentale (que serait la couleur à 1m de profondeur ?).
 - ÉTAPE 3 : Cross-check biogéographique (si le plongeur précise un lieu, ou selon le type de récif).
 - ÉTAPE 4 : Élimination des sosies (comparaison systématique avec les espèces proches).
-- ÉTAPE 5 : Nomenclature standardisée (Utilise toujours le nom commun le plus accepté. Ne mélange pas "Grogneur" et "Gorette" pour une même espèce dans une même fiche, choisis le standard FishBase).
+- ÉTAPE 5 : Nomenclature standardisée (Utilise le standard FishBase).
 
-Structure de réponse (JSON strict) :
-0. VALIDATION :
-- est_aquatique : boolean.
-- message_validation : string.
+Réponds en JSON valide selon ce schéma :
+{
+  "est_aquatique": boolean,
+  "message_validation": "string",
+  "organismes": [{
+    "nom_commun": "string",
+    "nom_scientifique": "string",
+    "indices_visuels": {"forme": "string", "texture": "string", "couleur": "string", "position": "string"},
+    "hypotheses": [{"nom_commun": "string", "nom_scientifique": "string"}],
+    "comparaison_especes": "string",
+    "choix_final_raison": "string",
+    "confiance": "Élevé/Moyen/Faible",
+    "justification_biologique": "string",
+    "risque_confusion": "string",
+    "indices_determinants": ["string"],
+    "type": "string",
+    "regne": "string",
+    "famille": "string",
+    "phrase_descriptive": "string",
+    "habitat": "string",
+    "position_eau": "string",
+    "zone_geo": "string",
+    "alimentation": "string",
+    "mode_de_vie": "string",
+    "comportement": "string"
+  }],
+  "lecture_ecologique": {"ecosysteme": "string", "biodiversite": "string", "interactions": "string", "etat_milieu": "string"},
+  "regard_plongeur": {"debutant": "string", "attentif": "string", "mal_compris": "string"},
+  "limites_analyse": "string"
+}
 
-1. ANALYSE BIOLOGIQUE APPROFONDIE (Par organisme) :
-- indices_visuels : forme (anatomie précise), texture, couleur (corrigée), position, interaction.
-- hypotheses : 1-3 espèces scientifiquement possibles.
-- comparaison_especes : Analyse comparative rigoureuse (ex: différence de nombre de bandes, forme de la queue).
-- choix_final_raison : Pourquoi cette espèce précisément et pas une autre.
-- confiance : Élevé / Moyen / Faible.
-- justification_biologique : Le critère taxonomique déterminant.
-- risque_confusion : Mentionner les espèces sosies.
-- indices_determinants : Points clés pour un diagnostic sûr.
-
-2. CLASSIFICATION & DESCRIPTION :
-- phrase_descriptive : Synthèse biologique experte.
-- Nom scientifique, Famille, Règne, Type.
-
-3. ÉCOLOGIE :
-- habitat, position_eau, zone_geo, alimentation, mode_de_vie, comportement.
-
-4. LECTURE ÉCOLOGIQUE & REGARD PLONGEUR :
-- Synthèse sur l'état du milieu et conseils d'observation.
-
-⚠️ CONSIGNE DE COHÉRENCE : Un même individu physique dans l'image ne doit pas recevoir de noms contradictoires. Si plusieurs individus de la même espèce sont visibles, traite-les comme un groupe cohérent.`;
+⚠️ IMPORTANT : Sois concis mais précis pour éviter la troncature du JSON.`;
 
 export default function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -391,6 +397,7 @@ export default function App() {
         contents: { parts: [imagePart, textPart] },
         config: {
           temperature: 0.1,
+          maxOutputTokens: 2048, // Limit output to prevent truncation issues and ensure stability
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -468,7 +475,15 @@ export default function App() {
       });
 
       if (response && response.candidates && response.candidates[0]) {
-        const data = JSON.parse(response.candidates[0].content.parts[0].text || '{}') as DiveAnalysis;
+        let data: DiveAnalysis;
+        try {
+          data = JSON.parse(response.candidates[0].content.parts[0].text || '{}') as DiveAnalysis;
+        } catch (parseErr) {
+          console.error("JSON Parse Error:", parseErr);
+          throw new Error(language === 'fr' 
+            ? "L'analyse a été interrompue ou est trop complexe. Veuillez réessayer avec une photo plus centrée sur l'organisme."
+            : "The analysis was interrupted or is too complex. Please try again with a photo more focused on the organism.");
+        }
         
         if (data.est_aquatique === false) {
           setError(data.message_validation || (language === 'fr' 
