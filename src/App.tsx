@@ -485,7 +485,16 @@ export default function App() {
   };
 
   const handlePrint = () => {
+    const originalTitle = document.title;
+    const organismName = result?.organismes?.[0]?.nom_commun || "";
+    const newTitle = `Guide de Plongée Diving Aware${organismName ? ' - ' + organismName : ''}`;
+    
+    document.title = newTitle;
     window.print();
+    // Use a small timeout to ensure document.title is restored after the print dialog is handled
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 100);
   };
 
   const handleLogout = () => {
