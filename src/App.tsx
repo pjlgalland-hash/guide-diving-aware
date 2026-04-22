@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { db, auth } from './lib/firebase';
 
 interface DiveAnalysisOrganism {
     nom_commun: string;
@@ -62,41 +61,14 @@ export default function App() {
   const [result, setResult] = useState<DiveAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [contextText, setContextText] = useState<string>('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordAttempt, setPasswordAttempt] = useState('');
   const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if already authenticated in local storage
-    const authStatus = localStorage.getItem('diving_aware_auth');
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
-    }
-
     return () => {
       if (imagePreview) URL.revokeObjectURL(imagePreview);
     };
   }, [imagePreview]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordAttempt.toUpperCase() === 'AWARE2024') {
-      setIsAuthenticated(true);
-      localStorage.setItem('diving_aware_auth', 'true');
-      setError(null);
-    } else {
-      setError('Mot de passe incorrect.');
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('diving_aware_auth');
-    setResult(null);
-    setImageFile(null);
-    setImagePreview(null);
-  };
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -236,58 +208,6 @@ export default function App() {
     window.print();
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
-        <div className="relative bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
-          <div className="absolute top-6 right-6 flex bg-slate-100 p-1 rounded-lg">
-            <button
-              onClick={() => setLanguage('fr')}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'fr' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              FR
-            </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded transition-all ${language === 'en' ? 'bg-[#003466] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              EN
-            </button>
-          </div>
-          <div className="w-48 h-32 flex items-center justify-center mb-6 overflow-hidden">
-            <img 
-              src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
-              alt="Diving Aware Logo" 
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">{language === 'fr' ? 'Accès Sécurisé' : 'Secure Access'}</h1>
-          <p className="text-sky-600 text-xs font-bold uppercase tracking-widest mb-6">Le souffle de l'eau</p>
-          <p className="text-slate-500 mb-8">{language === 'fr' ? 'Veuillez entrer le mot de passe pour utiliser le Guide de Plongée AI.' : 'Please enter your password to use the AI Diving Guide.'}</p>
-          
-          <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-            <input
-              type="password"
-              placeholder={language === 'fr' ? 'Mot de passe...' : 'Password...'}
-              value={passwordAttempt}
-              onChange={(e) => setPasswordAttempt(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003466]/20 focus:border-[#003466] text-center text-lg font-medium tracking-widest"
-              autoFocus
-            />
-            {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-[#003466] hover:bg-[#00284d] text-white font-bold uppercase tracking-wider py-4 rounded-lg transition-all shadow-md active:scale-[0.98]"
-            >
-              {language === 'fr' ? 'Accéder à l\'outil' : 'Access Tool'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/30 print:bg-white print:text-black">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-100/50 via-slate-50 to-slate-50 pointer-events-none print:hidden" />
@@ -324,9 +244,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1">
-                {language === 'fr' ? 'Déconnexion' : 'Logout'}
-              </button>
             </div>
             <div>
               <div className="flex flex-col gap-1 mb-4 mt-[-10px]">
@@ -598,35 +515,6 @@ export default function App() {
                    <li><strong>{language === 'fr' ? "Animal" : "Animal"} :</strong> {language === 'fr' ? "mange de la nourriture, parfois bouge." : "eats food, sometimes moves."}</li>
                    <li><strong>{language === 'fr' ? "Végétal / algue" : "Plant / Algae"} :</strong> {language === 'fr' ? "utilise la lumière (photosynthèse)." : "uses light (photosynthesis)."}</li>
                  </ul>
-              </div>
-
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={async () => {
-                    if (!auth.currentUser) {
-                      alert('Veuillez vous connecter pour sauvegarder.');
-                      return;
-                    }
-                    try {
-                      const { addDoc, collection } = await import('firebase/firestore');
-                      await addDoc(collection(db, 'observations'), {
-                        userId: auth.currentUser.uid,
-                        nomCommun: result.organismes[0]?.nom_commun || 'Inconnu',
-                        nomScientifique: result.organismes[0]?.nom_scientifique || 'Inconnu',
-                        latitude: 0, // À implémenter plus tard
-                        longitude: 0, // À implémenter plus tard
-                        date: new Date().toISOString(),
-                      });
-                      alert('Observation sauvegardée !');
-                    } catch (e) {
-                      console.error(e);
-                      alert('Erreur lors de la sauvegarde.');
-                    }
-                  }}
-                  className="bg-[#003466] text-white px-6 py-2 rounded-lg font-bold uppercase text-sm hover:bg-[#00284d] transition-all"
-                >
-                  {language === 'fr' ? 'Sauvegarder cette observation' : 'Save this observation'}
-                </button>
               </div>
 
               {/* Message Impact */}
