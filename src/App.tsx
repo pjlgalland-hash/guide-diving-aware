@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock, CheckCircle2, Mail, ChevronRight } from 'lucide-react';
+import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock, CheckCircle2, Mail, ChevronRight, Binary } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { db, auth, googleProvider, UserStats } from './lib/firebase';
 import { 
@@ -24,6 +24,27 @@ const COLLABORATORS = [
   // 'email2@gmail.com',
   // 'email3@gmail.com'
 ];
+
+const EXPERT_PROMPT = `Tu es un Expert Mondial en Taxonomie Marine, possédant une connaissance encyclopédique équivalente aux bases de données DORIS, FishBase et WoRMS (World Register of Marine Species). 
+
+Ton objectif est d'identifier les organismes dans l'image avec une précision scientifique absolue.
+
+ÉTAPE 1 : VALIDATION AQUATIQUE
+Vérifie si l'image représente une scène aquatique ou sous-marine. Si non, réponds est_aquatique: false.
+
+ÉTAPE 2 : ANALYSE TAXONOMIQUE EXPERTE
+- Utilise la nomenclature scientifique binominale à jour (WoRMS).
+- Pour chaque organisme, détaille la hiérarchie complète (Embranchement, Classe, Ordre, Famille).
+- Fournis une description taxonomique rigoureuse basée sur les caractères diagnostiques visibles (morphologie, phénotype).
+- Compare avec les espèces "confondues" (cryptiques) comme le ferait un expert de DORIS.
+- Mentionne le statut de conservation IUCN officiel.
+- Justifie ton identification par des critères biologiques déterminants.
+
+ÉTAPE 3 : ÉCOLOGIE & COMPORTEMENT
+- Habitat précis, distribution géographique typique, alimentation et comportement observé.
+
+Langue : Réponds exclusivement dans la langue demandée par l'utilisateur (Français ou Anglais).
+Niveau : Expert Mondial.`;
 
 const isTeamMember = (email?: string | null) => email ? COLLABORATORS.includes(email) : false;
 
@@ -54,8 +75,13 @@ interface DiveAnalysisOrganism {
     nom_commun: string;
     nom_scientifique: string;
     regne: string;
+    embranchement: string;
+    classe: string;
+    ordre: string;
     famille: string;
+    statut_iucn: string;
     phrase_descriptive: string;
+    description_taxonomique: string;
 
     // 3. ÉCOLOGIE
     habitat: string;
@@ -83,51 +109,6 @@ interface DiveAnalysis {
   };
   limites_analyse: string;
 }
-
-const PROMPT = `Tu es un expert mondial en biologie marine et taxonomie, spécialisé dans l'identification visuelle à partir de prises de vues sous-marines. Ton analyse doit être d'une précision scientifique absolue (niveau DORIS / FishBase).
-
-1. VALIDATION INITIALE :
-Vérifie si l'image est aquatique/sous-marine. Si non, réponds est_aquatique: false.
-
-2. MÉTHODOLOGIE D'IDENTIFICATION STRICTE (RAISONNEMENT DÉDUCTIF) :
-- ÉTAPE 1 : Analyse descriptive brute (forme des nageoires, nombre de rayons visibles, motifs, position des yeux, forme de la bouche).
-- ÉTAPE 2 : Correction chromatique mentale (que serait la couleur à 1m de profondeur ?).
-- ÉTAPE 3 : Cross-check biogéographique (si le plongeur précise un lieu, ou selon le type de récif).
-- ÉTAPE 4 : Élimination des sosies (comparaison systématique avec les espèces proches).
-- ÉTAPE 5 : Nomenclature standardisée (Utilise le standard FishBase).
-
-Réponds en JSON valide selon ce schéma :
-{
-  "est_aquatique": boolean,
-  "message_validation": "string",
-  "organismes": [{
-    "nom_commun": "string",
-    "nom_scientifique": "string",
-    "indices_visuels": {"forme": "string", "texture": "string", "couleur": "string", "position": "string"},
-    "hypotheses": [{"nom_commun": "string", "nom_scientifique": "string"}],
-    "comparaison_especes": "string",
-    "choix_final_raison": "string",
-    "confiance": "Élevé/Moyen/Faible",
-    "justification_biologique": "string",
-    "risque_confusion": "string",
-    "indices_determinants": ["string"],
-    "type": "string",
-    "regne": "string",
-    "famille": "string",
-    "phrase_descriptive": "string",
-    "habitat": "string",
-    "position_eau": "string",
-    "zone_geo": "string",
-    "alimentation": "string",
-    "mode_de_vie": "string",
-    "comportement": "string"
-  }],
-  "lecture_ecologique": {"ecosysteme": "string", "biodiversite": "string", "interactions": "string", "etat_milieu": "string"},
-  "regard_plongeur": {"debutant": "string", "attentif": "string", "mal_compris": "string"},
-  "limites_analyse": "string"
-}
-
-⚠️ IMPORTANT : Sois concis mais précis pour éviter la troncature du JSON.`;
 
 export default function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -369,35 +350,32 @@ export default function App() {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Erreur: Clé API manquante dans la configuration du serveur (Vercel).");
+        throw new Error("Clé API manquante dans la configuration.");
       }
 
       const ai = new GoogleGenAI({ apiKey });
       const base64Data = await fileToBase64(imageFile);
-
+      
       const imagePart = {
         inlineData: {
           mimeType: imageFile.type,
           data: base64Data,
         },
       };
-      
-      let fullPrompt = PROMPT;
+
+      let fullPrompt = EXPERT_PROMPT;
       fullPrompt += `\n\nRéponds exclusivement en ${language === 'fr' ? 'français' : 'anglais'}.`;
       if (contextText.trim()) {
         fullPrompt += `\n\nContexte ou notes du plongeur : ${contextText}`;
       }
       
-      const textPart = {
-        text: fullPrompt,
-      };
+      const textPart = { text: fullPrompt };
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: { parts: [imagePart, textPart] },
         config: {
-          temperature: 0.1,
-          maxOutputTokens: 2048, // Limit output to prevent truncation issues and ensure stability
+          temperature: 0.2,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -439,8 +417,13 @@ export default function App() {
                     nom_commun: { type: Type.STRING },
                     nom_scientifique: { type: Type.STRING },
                     regne: { type: Type.STRING },
+                    embranchement: { type: Type.STRING },
+                    classe: { type: Type.STRING },
+                    ordre: { type: Type.STRING },
                     famille: { type: Type.STRING },
+                    statut_iucn: { type: Type.STRING },
                     phrase_descriptive: { type: Type.STRING },
+                    description_taxonomique: { type: Type.STRING },
                     habitat: { type: Type.STRING },
                     position_eau: { type: Type.STRING },
                     zone_geo: { type: Type.STRING },
@@ -474,28 +457,16 @@ export default function App() {
         }
       });
 
-      if (response && response.candidates && response.candidates[0]) {
-        let data: DiveAnalysis;
-        try {
-          data = JSON.parse(response.candidates[0].content.parts[0].text || '{}') as DiveAnalysis;
-        } catch (parseErr) {
-          console.error("JSON Parse Error:", parseErr);
-          throw new Error(language === 'fr' 
-            ? "L'analyse a été interrompue ou est trop complexe. Veuillez réessayer avec une photo plus centrée sur l'organisme."
-            : "The analysis was interrupted or is too complex. Please try again with a photo more focused on the organism.");
-        }
-        
-        if (data.est_aquatique === false) {
-          setError(data.message_validation || (language === 'fr' 
-            ? "Cette photo ne semble pas être une prise de vue aquatique ou sous-marine. Diving Aware n'analyse que la biodiversité marine." 
-            : "This photo does not appear to be an aquatic or underwater shot. Diving Aware only analyzes marine biodiversity."));
-          setResult(null);
-        } else {
-          setResult(data);
-          await incrementUsage(user.uid);
-        }
+      const data = JSON.parse(response.text || '{}') as DiveAnalysis;
+      
+      if (data.est_aquatique === false) {
+        setError(data.message_validation || (language === 'fr' 
+          ? "Cette photo ne semble pas être une prise de vue aquatique ou sous-marine. Diving Aware n'analyse que la biodiversité marine." 
+          : "This photo does not appear to be an aquatic or underwater shot. Diving Aware only analyzes marine biodiversity."));
+        setResult(null);
       } else {
-        throw new Error("Format de réponse invalide.");
+        setResult(data);
+        await incrementUsage(user.uid);
       }
     } catch (err: any) {
       console.error(err);
@@ -503,9 +474,9 @@ export default function App() {
       
       // Intercept quota / region errors from Google API
       if (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-        errorMessage = "Service temporairement indisponible (Quota Google atteint). Veuillez réessayer plus tard.";
+        errorMessage = "Service temporairement indisponible (Quota atteint). Veuillez réessayer plus tard.";
       } else if (errorMessage.includes('503')) {
-        errorMessage = "Les serveurs de Google sont actuellement surchargés. Veuillez réessayer dans quelques instants.";
+        errorMessage = "Le serveur d'analyse est actuellement surchargé. Veuillez réessayer dans quelques instants.";
       }
       
       setError(errorMessage);
@@ -1192,16 +1163,43 @@ export default function App() {
                     <div key={index} className="flex flex-col gap-4 print-no-break border-b border-slate-50 pb-6 last:border-0">
                       
                       {/* En-tête Organisme */}
-                      <div className="flex gap-3 items-center">
-                        <div className="w-6 h-6 rounded-full bg-[#003466] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#003466] text-white flex items-center justify-center font-bold text-sm shrink-0 mt-1 shadow-sm">
                           {index + 1}
                         </div>
-                        <div className="flex-1 flex items-baseline gap-3">
-                          <h3 className="text-lg font-bold text-slate-900 capitalize">
-                            {org.nom_commun}
-                          </h3>
-                          <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-widest">{org.type}</span>
-                          <span className="ml-auto text-[10px] font-medium text-slate-400 tracking-wide uppercase">{language === 'fr' ? 'Confiance' : 'Confidence'} : {org.confiance}</span>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-1">
+                            <h3 className="text-2xl font-bold text-slate-900 capitalize font-serif">
+                              {org.nom_commun}
+                            </h3>
+                            <span className="text-xs font-black bg-slate-100 text-[#003466] px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">{org.type}</span>
+                            <span className="text-[10px] font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100 uppercase tracking-wide ml-auto">
+                              Expertise : {org.confiance}
+                            </span>
+                          </div>
+                          <p className="text-base font-bold text-slate-600 italic font-serif underline decoration-cyan-400 decoration-2 underline-offset-4 mb-2">
+                            {org.nom_scientifique}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Expertise Taxonomique - New Section */}
+                      <div className="grid grid-cols-4 gap-2 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Embranchement</span>
+                          <span className="text-[10px] font-bold text-slate-700 truncate">{org.embranchement}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Classe</span>
+                          <span className="text-[10px] font-bold text-slate-700 truncate">{org.classe}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Ordre</span>
+                          <span className="text-[10px] font-bold text-slate-700 truncate">{org.ordre}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Famille</span>
+                          <span className="text-[10px] font-bold text-slate-700 truncate font-mono">{org.famille}</span>
                         </div>
                       </div>
 
@@ -1246,19 +1244,24 @@ export default function App() {
                       </div>
 
                       {/* Fiche Technique (Compact 2 cols) */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 print-grid-2 gap-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 print-grid-2 gap-6 bg-white p-4 rounded-2xl border-2 border-slate-100 shadow-sm">
+                        <div className="space-y-4">
                           <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Classification</p>
-                            <p className="text-sm font-bold text-slate-900 italic font-serif underline decoration-[#003466] decoration-1 underline-offset-2">{org.nom_scientifique}</p>
-                            <p className="text-[9px] text-slate-500 mt-1">Famille : <span className="font-bold uppercase tracking-tight">{org.famille}</span> • Règne : <span className="font-bold uppercase tracking-tight">{org.regne}</span></p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Binary className="w-3.5 h-3.5 text-cyan-500" />
+                              <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Description Taxonomique</p>
+                            </div>
+                            <p className="text-[10px] text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
+                               {org.description_taxonomique}
+                            </p>
                           </div>
-                          <p className="text-[10px] text-slate-700 italic border-l border-[#003466] pl-3 leading-snug">
-                            "{org.phrase_descriptive}"
-                          </p>
+                          <div className="flex items-center justify-between p-2 bg-slate-900 text-white rounded-lg">
+                            <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Status IUCN</span>
+                            <span className="text-[10px] font-bold">{org.statut_iucn}</span>
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <h5 className="text-[8px] font-black px-1.5 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Habitat</h5>
                             <ul className="text-[9px] text-slate-600 space-y-0.5 leading-tight">

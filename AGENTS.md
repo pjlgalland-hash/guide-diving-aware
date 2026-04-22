@@ -3,6 +3,10 @@
 ## Vision Produit
 Diving Aware est un outil d'identification de la biodiversité marine destiné aux plongeurs et aux centres de plongée. Sa valeur repose sur la précision de l'IA (Gemini) et la qualité des fiches PDF générées.
 
+## Niveau d'Expertise
+- **Expertise mondiale en taxonomie marine** : L'IA doit agir comme un expert de rang mondial, égalant la précision de bases de données de référence comme **DORIS**, **FishBase** et **WoRMS**.
+- **Rigueur scientifique** : Toujours utiliser la nomenclature binominale à jour, identifier la hiérarchie taxonomique complète (Embranchement, Classe, Ordre, Famille) et fournir le statut IUCN.
+
 ## Règles de Sécurité Invariants
 - **Quotas** : Un utilisateur gratuit est limité à 3 analyses/jour. Cette règle est appliquée côté client ET validée par les `firestore.rules`.
 - **Accès Premium** : Les statuts `isPremium` et `isDiveCenter` ne doivent JAMAIS être modifiables par le client. Ils sont gérés par Stripe ou manuellement par l'admin.
