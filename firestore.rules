@@ -1,8 +1,7 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
+    // 1. Safety Net: Deny everything by default
     match /{document=**} {
       allow read, write: if false;
     }
@@ -15,54 +14,35 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
+
     function isAdmin() {
-      // Hardcoded admin for the user
-      return isSignedIn() && (
-        request.auth.token.email == 'pjl.galland@gmail.com' && 
-        request.auth.token.email_verified == true
-      );
+      return isSignedIn() && request.auth.token.email == 'pjl.galland@gmail.com';
     }
 
-    function incoming() {
-      return request.resource.data;
-    }
-    
-    function existing() {
-      return resource.data;
-    }
-
-    function isValidUserStats(data) {
-      return data.userId is string &&
-             data.userId.size() <= 128 &&
-             data.dailyCount is int &&
-             data.dailyCount >= 0 &&
-             data.lastAnalysisDate is string &&
-             data.lastAnalysisDate.size() <= 64;
-    }
-
-    // Quota management
+    // 2. User Stats Protection
     match /users/{userId}/stats/usage {
       allow read: if isOwner(userId) || isAdmin();
       
-      allow create: if isOwner(userId) && 
-                      isValidUserStats(incoming()) && 
-                      incoming().userId == userId &&
-                      incoming().dailyCount == 1; // Start at 1 on first create
-                      
-      allow update: if (isOwner(userId) || isAdmin()) && 
-                      isValidUserStats(incoming()) &&
-                      incoming().userId == userId &&
-                      (
-                        isAdmin() || 
-                        // Normal user can only increment or reset if date changes
-                        (
-                          // Simple increment: same date, count increases by 1
-                          (incoming().lastAnalysisDate == existing().lastAnalysisDate && incoming().dailyCount == existing().dailyCount + 1) ||
-                          // Reset: different date, count resets to 1
-                          (incoming().lastAnalysisDate != existing().lastAnalysisDate && incoming().dailyCount == 1)
-                        )
-                      );
+      // Creating the doc for the first time
+      allow create: if isOwner(userId) 
+        && request.resource.data.userId == userId
+        && request.resource.data.dailyCount == 0
+        && request.resource.data.isPremium == false
+        && request.resource.data.isDiveCenter == false;
+
+      // Updating stats
+      allow update: if (isOwner(userId) || isAdmin()) 
+        && (
+          // Case 1: Simple increment of count (Standard user)
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dailyCount', 'lastAnalysisDate'])
+           && request.resource.data.dailyCount == resource.data.dailyCount + 1)
+          ||
+          // Case 2: Update center branding (Dive Center user)
+          (resource.data.isDiveCenter == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['centerName', 'centerLogoUrl']))
+          ||
+          // Case 3: Admin override (for support)
+          isAdmin()
+        );
     }
   }
 }

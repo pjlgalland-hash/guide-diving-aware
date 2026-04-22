@@ -1,23 +1,25 @@
 {
   "entities": {
-    "UserStats": {
-      "title": "User Stats",
-      "description": "Tracks usage quotas for users.",
+    "UserUsage": {
+      "title": "User Usage Statistics",
+      "description": "Tracks daily analysis count and premium status for each diver.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "dailyCount": { "type": "number" },
+        "dailyCount": { "type": "integer" },
         "lastAnalysisDate": { "type": "string", "format": "date" },
         "isPremium": { "type": "boolean" },
-        "userEmail": { "type": "string" }
+        "isDiveCenter": { "type": "boolean" },
+        "centerName": { "type": "string" },
+        "centerLogoUrl": { "type": "string", "format": "uri" }
       },
       "required": ["userId", "dailyCount", "lastAnalysisDate"]
     }
   },
   "firestore": {
-    "users/{userId}/stats/usage": {
-      "schema": "UserStats",
-      "description": "Stores daily usage statistics for a user."
+    "/users/{userId}/stats/usage": {
+      "schema": "UserUsage",
+      "description": "Primary storage for user quotas and identity levels."
     }
   }
 }

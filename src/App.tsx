@@ -948,6 +948,35 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Footer / IP Protection */}
+      <footer className="w-full mt-20 pb-12 px-6 border-t border-slate-100 print:hidden text-center sticky top-[100vh]">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-6">
+          <div className="w-12 h-12 mt-12 bg-white flex items-center justify-center shrink-0 overflow-hidden grayscale opacity-30">
+            <img 
+              src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-bold text-slate-900 tracking-tight">Diving Aware</p>
+            <p className="text-[11px] text-slate-400 uppercase tracking-[0.2em]">© {new Date().getFullYear()} – Identification de la biodiversité marine</p>
+          </div>
+          <div className="flex gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-wrap justify-center">
+            <a href="#" className="hover:text-[#003466] transition-colors">{language === 'fr' ? 'Mentions Légales' : 'Legal Notice'}</a>
+            <a href="#" className="hover:text-[#003466] transition-colors">{language === 'fr' ? 'Cookies' : 'Cookies Policy'}</a>
+            <a href="#" className="hover:text-[#003466] transition-colors">CGU</a>
+            <a href="mailto:pjl.galland@gmail.com" className="hover:text-[#003466] transition-colors">Contact</a>
+          </div>
+          <p className="max-w-md text-[10px] text-slate-400 italic font-serif leading-relaxed px-6">
+            {language === 'fr' 
+              ? "Le contenu de ce site, incluant les méthodes de mise en page et les formats de rapports générés, est protégé par le droit de la propriété intellectuelle. Toute reproduction est interdite sans accord écrit." 
+              : "The content of this site, including layout methods and generated report formats, is protected by intellectual property law. Reproduction is prohibited without written agreement."}
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
