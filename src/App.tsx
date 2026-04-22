@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info } from 'lucide-react';
+import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
+import { db, auth, googleProvider, UserStats } from './lib/firebase';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+
+const DAILY_QUOTA_LIMIT = 3;
+const ADMIN_EMAIL = 'pjl.galland@gmail.com';
 
 interface DiveAnalysisOrganism {
     nom_commun: string;
@@ -62,7 +68,82 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [contextText, setContextText] = useState<string>('');
   const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  const [user, setUser] = useState<User | null>(null);
+  const [userUsage, setUserUsage] = useState<UserStats | null>(null);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchUserUsage(currentUser.uid);
+      } else {
+        setUserUsage(null);
+        setIsQuotaExceeded(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const fetchUserUsage = async (userId: string) => {
+    try {
+      const docRef = doc(db, 'users', userId, 'stats', 'usage');
+      const docSnap = await getDoc(docRef);
+      const today = new Date().toISOString().split('T')[0];
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserStats;
+        if (data.lastAnalysisDate !== today) {
+          // Reset for new day (done on next write, but let's update UI)
+          setUserUsage({ ...data, dailyCount: 0, lastAnalysisDate: today });
+          setIsQuotaExceeded(false);
+        } else {
+          setUserUsage(data);
+          if (auth.currentUser?.email !== ADMIN_EMAIL && data.dailyCount >= DAILY_QUOTA_LIMIT) {
+            setIsQuotaExceeded(true);
+          }
+        }
+      } else {
+        setUserUsage({ userId, dailyCount: 0, lastAnalysisDate: today });
+        setIsQuotaExceeded(false);
+      }
+    } catch (e) {
+      console.error("Erreur lors de la récupération du quota:", e);
+    }
+  };
+
+  const incrementUsage = async (userId: string) => {
+    if (auth.currentUser?.email === ADMIN_EMAIL) return; // No increment for admin
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const docRef = doc(db, 'users', userId, 'stats', 'usage');
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserStats;
+        if (data.lastAnalysisDate === today) {
+          await updateDoc(docRef, {
+            dailyCount: data.dailyCount + 1
+          });
+          setUserUsage({ ...data, dailyCount: data.dailyCount + 1 });
+        } else {
+          await updateDoc(docRef, {
+            dailyCount: 1,
+            lastAnalysisDate: today
+          });
+          setUserUsage({ ...data, dailyCount: 1, lastAnalysisDate: today });
+        }
+      } else {
+        const newData: UserStats = { userId, dailyCount: 1, lastAnalysisDate: today };
+        await setDoc(docRef, newData);
+        setUserUsage(newData);
+      }
+    } catch (e) {
+      console.error("Erreur lors de l'incrémentation du quota:", e);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -112,7 +193,12 @@ export default function App() {
   };
 
   const analyzeImage = async () => {
-    if (!imageFile) return;
+    if (!imageFile || !user) return;
+
+    if (user.email !== ADMIN_EMAIL && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
+      setIsQuotaExceeded(true);
+      return;
+    }
 
     try {
       setIsAnalyzing(true);
@@ -181,9 +267,10 @@ export default function App() {
         }
       });
 
-      if (response.text) {
-        const data = JSON.parse(response.text) as DiveAnalysis;
+      if (response && response.candidates && response.candidates[0]) {
+        const data = JSON.parse(response.candidates[0].content.parts[0].text || '{}') as DiveAnalysis;
         setResult(data);
+        await incrementUsage(user.uid);
       } else {
         throw new Error("Format de réponse invalide.");
       }
@@ -207,6 +294,34 @@ export default function App() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handleLogout = () => {
+    signOut(auth);
+    setResult(null);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-md w-full flex flex-col items-center text-center">
+          <Waves className="w-16 h-16 text-cyan-600 mb-6" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Diving Aware</h1>
+          <p className="text-slate-600 mb-8">Connectez-vous pour découvrir la biodiversité marine locale.</p>
+          <button
+            onClick={() => signInWithPopup(auth, googleProvider)}
+            className="w-full bg-[#003466] text-white py-3 rounded-xl font-bold hover:bg-[#00284d] transition-all"
+          >
+            Se connecter avec Google
+          </button>
+          <div className="mt-6 text-xs text-slate-400">
+            En vous connectant, vous bénéficiez de {DAILY_QUOTA_LIMIT} analyses gratuites par jour.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/30 print:bg-white print:text-black">
@@ -244,11 +359,31 @@ export default function App() {
                   </div>
                 </div>
               </div>
+              <button onClick={handleLogout} className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-4 px-2 py-1">
+                {language === 'fr' ? 'Déconnexion' : 'Logout'}
+              </button>
             </div>
             <div>
-              <div className="flex flex-col gap-1 mb-4 mt-[-10px]">
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{language === 'fr' ? 'Guide de Plongée' : 'Diving Guide'}</h1>
-                <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex flex-col gap-1 mt-[-10px]">
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{language === 'fr' ? 'Guide de Plongée' : 'Diving Guide'}</h1>
+                  <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
+                </div>
+                {user.email !== ADMIN_EMAIL && (
+                  <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+                    <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      {DAILY_QUOTA_LIMIT - (userUsage?.dailyCount || 0)} {language === 'fr' ? 'restants' : 'left'}
+                    </span>
+                  </div>
+                )}
+                {user.email === ADMIN_EMAIL && (
+                  <div className="bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+                    <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">
+                      Accès Admin Illimité
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="bg-white/80 backdrop-blur-sm border-l-[6px] border-[#003466] p-6 shadow-sm rounded-r-2xl mb-8">
                 <p className="text-slate-700 text-[15px] leading-relaxed italic font-serif">
@@ -333,12 +468,30 @@ export default function App() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            {isQuotaExceeded && (
+              <div className="w-full mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col items-center gap-4 text-center">
+                <Lock className="w-10 h-10 text-amber-600" />
+                <div>
+                  <h3 className="font-bold text-amber-900">{language === 'fr' ? 'Quota atteint' : 'Quota reached'}</h3>
+                  <p className="text-sm text-amber-800 mt-1">
+                    {language === 'fr' 
+                      ? `Vous avez utilisé vos ${DAILY_QUOTA_LIMIT} analyses gratuites pour aujourd'hui.` 
+                      : `You have used your ${DAILY_QUOTA_LIMIT} free analyses for today.`}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-4 leading-relaxed font-medium">
+                    {language === 'fr'
+                      ? "Offre Passionnée (Illimité) bientôt disponible ! Contactez-nous pour équiper votre centre de plongée."
+                      : "Premium Offer (Unlimited) coming soon! Contact us to equip your dive center."}
+                  </p>
+                </div>
+              </div>
+            )}
             <button
               onClick={analyzeImage}
-              disabled={!imageFile || isAnalyzing}
+              disabled={!imageFile || isAnalyzing || isQuotaExceeded}
               className={`
                 flex-1 py-4 px-8 rounded-lg font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all
-                ${!imageFile 
+                ${!imageFile || isQuotaExceeded
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : isAnalyzing 
                     ? 'bg-slate-800 text-white cursor-wait opacity-80'

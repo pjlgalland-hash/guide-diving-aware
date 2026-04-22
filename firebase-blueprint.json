@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "UserStats": {
+      "title": "User Stats",
+      "description": "Tracks usage quotas for users.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dailyCount": { "type": "number" },
+        "lastAnalysisDate": { "type": "string", "format": "date" },
+        "isPremium": { "type": "boolean" },
+        "userEmail": { "type": "string" }
+      },
+      "required": ["userId", "dailyCount", "lastAnalysisDate"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/stats/usage": {
+      "schema": "UserStats",
+      "description": "Stores daily usage statistics for a user."
+    }
+  }
+}

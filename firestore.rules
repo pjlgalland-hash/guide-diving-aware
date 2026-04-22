@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Hardcoded admin for the user
+      return isSignedIn() && (
+        request.auth.token.email == 'pjl.galland@gmail.com' && 
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserStats(data) {
+      return data.userId is string &&
+             data.userId.size() <= 128 &&
+             data.dailyCount is int &&
+             data.dailyCount >= 0 &&
+             data.lastAnalysisDate is string &&
+             data.lastAnalysisDate.size() <= 64;
+    }
+
+    // Quota management
+    match /users/{userId}/stats/usage {
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isOwner(userId) && 
+                      isValidUserStats(incoming()) && 
+                      incoming().userId == userId &&
+                      incoming().dailyCount == 1; // Start at 1 on first create
+                      
+      allow update: if (isOwner(userId) || isAdmin()) && 
+                      isValidUserStats(incoming()) &&
+                      incoming().userId == userId &&
+                      (
+                        isAdmin() || 
+                        // Normal user can only increment or reset if date changes
+                        (
+                          // Simple increment: same date, count increases by 1
+                          (incoming().lastAnalysisDate == existing().lastAnalysisDate && incoming().dailyCount == existing().dailyCount + 1) ||
+                          // Reset: different date, count resets to 1
+                          (incoming().lastAnalysisDate != existing().lastAnalysisDate && incoming().dailyCount == 1)
+                        )
+                      );
+    }
+  }
+}
