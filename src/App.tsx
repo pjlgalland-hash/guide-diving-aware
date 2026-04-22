@@ -5,6 +5,7 @@ import { db, auth, googleProvider, UserStats } from './lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { loadStripe } from '@stripe/stripe-js';
+import { motion, AnimatePresence } from 'motion/react';
 
 const DAILY_QUOTA_LIMIT = 3;
 const ADMIN_EMAIL = 'pjl.galland@gmail.com';
@@ -460,6 +461,105 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-sky-500/30 print:bg-white print:text-black">
+      <AnimatePresence>
+        {legalView && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" 
+            onClick={() => setLegalView(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white w-full max-w-2xl my-auto rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] italic">
+                  {legalView === 'legal' && (language === 'fr' ? 'Mentions Légales' : 'Legal Notice')}
+                  {legalView === 'cookies' && (language === 'fr' ? 'Gestion des Cookies' : 'Cookie Policy')}
+                  {legalView === 'cgu' && (language === 'fr' ? 'Conditions Générales d’Utilisation' : 'Terms of Use')}
+                </h2>
+                <button 
+                  type="button"
+                  onClick={() => setLegalView(null)} 
+                  className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 text-xl font-bold leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="p-8 overflow-y-auto text-slate-600 text-sm leading-relaxed">
+                {legalView === 'legal' && (
+                  <div className="space-y-6">
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">1. Éditeur du site</h3>
+                      <p>Diving Aware est un projet de Pierre-Jean Galland. Pour toute demande : pjl.galland@gmail.com.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">2. Hébergement</h3>
+                      <p>Ce service est hébergé sur Google Cloud Run (Europe-West).</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">3. Propriété Intellectuelle</h3>
+                      <p>Tous les éléments du site (textes, images, logos, structure du rapport PDF) sont protégés par le droit d'auteur. Toute reproduction sans accord écrit est formellement interdite.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">4. Responsabilité</h3>
+                      <p>L'IA utilisée pour l'identification peut commettre des erreurs. Les informations fournies sont à titre éducatif et ne doivent pas remplacer la consultation de professionnels de la plongée.</p>
+                    </section>
+                  </div>
+                )}
+                
+                {legalView === 'cookies' && (
+                  <div className="space-y-6">
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">Utilisation des cookies</h3>
+                      <p>Nous utilisons exclusivement des cookies techniques nécessaires :</p>
+                      <ul className="list-disc pl-5 mt-2 space-y-2">
+                        <li><strong>Authentification</strong> : Session Google.</li>
+                        <li><strong>Préférences</strong> : Choix de la langue (FR/EN).</li>
+                        <li><strong>Paiements</strong> : Sécurisation via Stripe.</li>
+                      </ul>
+                      <p className="mt-4">Aucun cookie de traçage publicitaire n'est déposé par Driving Aware.</p>
+                    </section>
+                  </div>
+                )}
+
+                {legalView === 'cgu' && (
+                  <div className="space-y-6">
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">1. Objet du Service</h3>
+                      <p>Diving Aware est un outil d'aide à l'identification de la biodiversité marine utilisant l'intelligence artificielle.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">2. Accès et Quotas</h3>
+                      <p>L'offre gratuite est limitée à 3 analyses par jour glissant. Les offres payantes (Passionnée et Centre) permettent une utilisation étendue conformément aux descriptifs lors de l'achat.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">3. Éthique et Environnement</h3>
+                      <p>L'utilisateur s'engage à respecter le milieu marin : aucun contact physique avec la faune et la flore, respect des distances de sécurité.</p>
+                    </section>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button 
+                  type="button"
+                  onClick={() => setLegalView(null)}
+                  className="bg-[#003466] text-white px-8 py-2.5 rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-black transition-all shadow-lg active:scale-95"
+                >
+                  Fermer
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-100/50 via-slate-50 to-slate-50 pointer-events-none print:hidden" />
       
       <div className="relative max-w-[1400px] mx-auto px-6 py-12 flex flex-col xl:flex-row gap-12 print:p-0 print:m-0 print:block">
@@ -966,9 +1066,9 @@ export default function App() {
             <p className="text-[11px] text-slate-400 uppercase tracking-[0.2em]">© {new Date().getFullYear()} – Identification de la biodiversité marine</p>
           </div>
           <div className="flex gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-wrap justify-center">
-            <button onClick={() => setLegalView('legal')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Mentions Légales' : 'Legal Notice'}</button>
-            <button onClick={() => setLegalView('cookies')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Cookies' : 'Cookies Policy'}</button>
-            <button onClick={() => setLegalView('cgu')} className="hover:text-[#003466] transition-colors cursor-pointer">CGU</button>
+            <button type="button" onClick={() => setLegalView('legal')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Mentions Légales' : 'Legal Notice'}</button>
+            <button type="button" onClick={() => setLegalView('cookies')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Cookies' : 'Cookies Policy'}</button>
+            <button type="button" onClick={() => setLegalView('cgu')} className="hover:text-[#003466] transition-colors cursor-pointer">CGU</button>
             <a href="mailto:pjl.galland@gmail.com" className="hover:text-[#003466] transition-colors">Contact</a>
           </div>
           <p className="max-w-md text-[10px] text-slate-400 italic font-serif leading-relaxed px-6">
@@ -978,77 +1078,6 @@ export default function App() {
           </p>
         </div>
       </footer>
-
-      {/* Legal Modal Overlay */}
-      {legalView && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setLegalView(null)}>
-          <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] italic">
-                {legalView === 'legal' && (language === 'fr' ? 'Mentions Légales' : 'Legal Notice')}
-                {legalView === 'cookies' && (language === 'fr' ? 'Gestion des Cookies' : 'Cookie Policy')}
-                {legalView === 'cgu' && (language === 'fr' ? 'Conditions Générales d’Utilisation' : 'Terms of Use')}
-              </h2>
-              <button 
-                onClick={() => setLegalView(null)} 
-                className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-8 overflow-y-auto text-slate-600 text-sm leading-relaxed prose prose-slate max-w-none">
-              {legalView === 'legal' && (
-                <div className="space-y-4">
-                  <h3 className="text-slate-900 font-bold">1. Éditeur du site</h3>
-                  <p>Diving Aware est un projet de Pierre-Jean Galland. Pour toute demande : pjl.galland@gmail.com.</p>
-                  <h3 className="text-slate-900 font-bold">2. Hébergement</h3>
-                  <p>Ce service est hébergé sur Google Cloud Run (Europe-West).</p>
-                  <h3 className="text-slate-900 font-bold">3. Propriété Intellectuelle</h3>
-                  <p>Tous les éléments du site (textes, images, logos, structure du rapport PDF) sont protégés. Toute reproduction sans accord écrit de l'auteur est interdite.</p>
-                  <h3 className="text-slate-900 font-bold">4. Responsabilité</h3>
-                  <p>L'IA utilisée pour l'identification peut commettre des erreurs. Les informations fournies sont à titre éducatif et ne doivent pas remplacer la consultation de guides d'experts ou de professionnels de la plongée.</p>
-                </div>
-              )}
-              
-              {legalView === 'cookies' && (
-                <div className="space-y-4">
-                  <h3 className="text-slate-900 font-bold">Utilisation des cookies</h3>
-                  <p>Nous n'utilisons que des cookies strictement nécessaires au fonctionnement de l'application :</p>
-                  <ul className="list-disc pl-5">
-                    <li><strong>Authentification</strong> : Permet de vous maintenir connecté via Google.</li>
-                    <li><strong>Préférences</strong> : Mémorise votre choix de langue.</li>
-                    <li><strong>Stripe</strong> : Cookies nécessaires à la sécurisation des paiements.</li>
-                  </ul>
-                  <p>Aucun cookie publicitaire tiers n'est utilisé sur cette plateforme.</p>
-                </div>
-              )}
-
-              {legalView === 'cgu' && (
-                <div className="space-y-4">
-                  <h3 className="text-slate-900 font-bold">1. Service</h3>
-                  <p>Diving Aware propose un outil d'aide à l'identification marine basé sur l'intelligence artificielle.</p>
-                  <h3 className="text-slate-900 font-bold">2. Quotas et Offres</h3>
-                  <p>L'utilisation gratuite est limitée à 3 analyses par jour glissant. L'Offre Passionnée débloque l'utilisation illimitée pour l'utilisateur. L'Offre Centre permet l'affichage d'un logo personnalisé.</p>
-                  <h3 className="text-slate-900 font-bold">3. Protection des écosystèmes</h3>
-                  <p>En utilisant ce service, vous vous engagez à respecter la charte du plongeur responsable : ne rien toucher, ne rien prélever.</p>
-                  <h3 className="text-slate-900 font-bold">4. Données personnelles</h3>
-                  <p>Vos emails sont utilisés uniquement pour la gestion de votre compte et de vos paiements. Ils ne seront jamais revendus à des tiers.</p>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button 
-                onClick={() => setLegalView(null)}
-                className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-wider"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
