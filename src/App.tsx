@@ -1123,11 +1123,11 @@ export default function App() {
             </div>
           ) : result && imagePreview ? (
             /* A4 PAGE RENDER */
-            <div className="bg-white text-slate-800 shadow-2xl w-full max-w-[210mm] min-h-[297mm] p-[10mm] sm:p-[15mm] md:p-[20mm] mx-auto print:max-w-none print:w-full print:p-0 print:shadow-none print:ring-0 flex flex-col">
+            <div className="bg-white text-slate-800 shadow-2xl w-full max-w-[210mm] min-h-[297mm] p-[10mm] md:p-[15mm] mx-auto print:max-w-none print:w-full print:p-[10mm] print:shadow-none print:ring-0 flex flex-col">
               
               {/* Header */}
-              <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-[#003466]">
-                <div className="w-24 h-24 flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="flex items-center gap-6 mb-4 pb-4 border-b-2 border-[#003466] shrink-0">
+                <div className="w-20 h-20 flex items-center justify-center shrink-0 overflow-hidden">
                   <img 
                     src="https://diving-aware.com/wp-content/uploads/2025/04/cropped-cropped-E35D7D51-DC59-4B05-99D3-695D95446040-1.png" 
                     alt="Diving Aware Logo" 
@@ -1140,12 +1140,12 @@ export default function App() {
                   <h1 className="text-xl sm:text-2xl font-bold text-[#003466] tracking-tight font-serif uppercase">
                     {language === 'fr' ? 'Guide d’identification' : 'Identification Guide'}
                   </h1>
-                  <p className="text-xs text-slate-400 font-bold tracking-widest uppercase mt-0.5">Diving Aware</p>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Diving Aware</p>
                 </div>
 
                 {userUsage?.isDiveCenter && userUsage.centerLogoUrl && (
-                  <div className="flex flex-col items-center gap-1 border-l-2 border-slate-100 pl-6">
-                    <div className="w-20 h-20 flex items-center justify-center shrink-0 overflow-hidden">
+                  <div className="flex flex-col items-center gap-1 border-l border-slate-100 pl-6">
+                    <div className="w-16 h-16 flex items-center justify-center shrink-0 overflow-hidden">
                       <img 
                         src={userUsage.centerLogoUrl} 
                         alt={userUsage.centerName || 'Center Logo'} 
@@ -1154,14 +1154,14 @@ export default function App() {
                       />
                     </div>
                     {userUsage.centerName && (
-                      <p className="text-[9px] font-bold text-[#003466] uppercase tracking-[0.1em]">{userUsage.centerName}</p>
+                      <p className="text-[8px] font-bold text-[#003466] uppercase tracking-[0.1em]">{userUsage.centerName}</p>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Photo */}
-              <div className="w-full h-[200px] sm:h-[300px] md:h-[400px] bg-slate-100 rounded-lg overflow-hidden mb-8 border border-slate-200">
+              <div className="w-full h-[180px] sm:h-[250px] md:h-[350px] print:h-[200px] bg-slate-100 rounded-lg overflow-hidden mb-6 border border-slate-200 shrink-0">
                 <img 
                   src={imagePreview} 
                   alt="Scène centrale" 
@@ -1171,102 +1171,94 @@ export default function App() {
               </div>
 
               {/* Fiches Organismes */}
-              <div className="mb-8 flex-1">
-                <h2 className="text-xl font-bold text-[#003466] mb-5 uppercase tracking-[0.2em] border-b border-slate-100 pb-2">
-                  1. Identification Biologique & Raisonnement
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-[#003466] mb-4 uppercase tracking-[0.2em] border-b border-slate-100 pb-1">
+                  1. Identification Biologique
                 </h2>
-                <div className="grid grid-cols-1 gap-12">
+                <div className="space-y-8">
                   {result.organismes.map((org, index) => (
-                    <div key={index} className="flex flex-col gap-6 break-inside-avoid">
+                    <div key={index} className="flex flex-col gap-4 print-no-break border-b border-slate-50 pb-6 last:border-0">
                       
                       {/* En-tête Organisme */}
-                      <div className="flex gap-4 items-center">
-                        <div className="w-8 h-8 rounded-full bg-[#003466] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="flex gap-3 items-center">
+                        <div className="w-6 h-6 rounded-full bg-[#003466] text-white flex items-center justify-center font-bold text-xs shrink-0">
                           {index + 1}
                         </div>
-                        <div className="flex-1 border-b border-slate-200 pb-1">
-                          <h3 className="text-xl font-bold text-slate-900 capitalize flex items-center gap-3">
+                        <div className="flex-1 flex items-baseline gap-3">
+                          <h3 className="text-lg font-bold text-slate-900 capitalize">
                             {org.nom_commun}
-                            <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest">{org.type}</span>
-                            <span className="ml-auto text-xs font-medium text-slate-400">Confiance : {org.confiance}</span>
                           </h3>
+                          <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-widest">{org.type}</span>
+                          <span className="ml-auto text-[10px] font-medium text-slate-400 tracking-wide uppercase">{language === 'fr' ? 'Confiance' : 'Confidence'} : {org.confiance}</span>
                         </div>
                       </div>
 
-                      {/* Raisonnement Biologique (Indépendant des boîtes standards) */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Raisonnement Biologique */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 print-grid-3 gap-6">
                         {/* 1.1 Observations */}
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
-                            <Info className="w-3 h-3" /> Observations Prises
+                        <div>
+                          <h4 className="text-[9px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <Info className="w-2.5 h-2.5" /> Observations
                           </h4>
-                          <ul className="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
-                            <li><strong>Forme :</strong> {org.indices_visuels.forme}</li>
-                            <li><strong>Texture :</strong> {org.indices_visuels.texture}</li>
-                            <li><strong>Couleur :</strong> {org.indices_visuels.couleur}</li>
-                            <li><strong>Position :</strong> {org.indices_visuels.position}</li>
-                            <li><strong>Inter. :</strong> {org.indices_visuels.interaction}</li>
+                          <ul className="text-[10px] text-slate-600 space-y-1 leading-tight">
+                            <li><span className="font-bold opacity-70">Forme :</span> {org.indices_visuels.forme}</li>
+                            <li><span className="font-bold opacity-70">Texture :</span> {org.indices_visuels.texture}</li>
+                            <li><span className="font-bold opacity-70">Couleur :</span> {org.indices_visuels.couleur}</li>
+                            <li><span className="font-bold opacity-70">Position :</span> {org.indices_visuels.position}</li>
                           </ul>
                         </div>
 
-                        {/* 1.2 Hypothèses & Comparaison */}
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
-                            <AlertCircle className="w-3 h-3" /> Hypothèses & Analyse
+                        {/* 1.2 Hypothèses */}
+                        <div>
+                          <h4 className="text-[9px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <AlertCircle className="w-2.5 h-2.5" /> Analyse
                           </h4>
-                          <div className="text-[11px] text-slate-600 space-y-3 leading-relaxed">
-                            <div>
-                              <p className="font-bold mb-1 opacity-70 italic text-[10px]">Espèces possibles :</p>
-                              {org.hypotheses.map((h, i) => (
-                                <p key={i} className="mb-0.5">• {h.nom_commun} <span className="italic">({h.nom_scientifique})</span></p>
-                              ))}
-                            </div>
-                            <p><strong>Différenciation :</strong> {org.comparaison_especes}</p>
+                          <div className="text-[10px] text-slate-600 space-y-2 leading-tight">
+                            <p><strong>Espèces proches :</strong> {org.hypotheses.map(h => h.nom_commun).join(', ')}</p>
+                            <p><strong>Différence :</strong> {org.comparaison_especes}</p>
                           </div>
                         </div>
 
-                        {/* 1.3 Choix Final & Sécurité */}
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3" /> Conclusion & Justification
+                        {/* 1.3 Conclusion */}
+                        <div>
+                          <h4 className="text-[9px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> Conclusion
                           </h4>
-                          <div className="text-[11px] text-slate-600 space-y-3 leading-relaxed">
+                          <div className="text-[10px] text-slate-600 space-y-2 leading-tight">
                             <p><strong>Raison :</strong> {org.choix_final_raison}</p>
-                            <div className="p-2 bg-amber-50 rounded-lg border border-amber-100 text-amber-800 text-[10px]">
+                            <div className="p-1.5 bg-amber-50 rounded border border-amber-100 text-amber-800 text-[9px] mt-1 print:bg-amber-50">
                               <strong>Attention :</strong> {org.risque_confusion}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* 2. & 3. Fiches de Description (Compact) */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
-                        <div className="space-y-4">
+                      {/* Fiche Technique (Compact 2 cols) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 print-grid-2 gap-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                      <div className="space-y-3">
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Classification</p>
-                            <p className="text-sm font-bold text-slate-900 italic font-serif underline decoration-[#003466] decoration-2 underline-offset-4">{org.nom_scientifique}</p>
-                            <p className="text-[10px] text-slate-500 mt-2">Famille : <span className="font-bold uppercase tracking-tighter">{org.famille}</span> • Règne : <span className="font-bold uppercase tracking-tighter">{org.regne}</span></p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Classification</p>
+                            <p className="text-sm font-bold text-slate-900 italic font-serif underline decoration-[#003466] decoration-1 underline-offset-2">{org.nom_scientifique}</p>
+                            <p className="text-[9px] text-slate-500 mt-1">Famille : <span className="font-bold uppercase tracking-tight">{org.famille}</span> • Règne : <span className="font-bold uppercase tracking-tight">{org.regne}</span></p>
                           </div>
-                          <p className="text-[11px] font-medium text-slate-700 italic border-l-2 border-[#003466] pl-4 leading-relaxed">
+                          <p className="text-[10px] text-slate-700 italic border-l border-[#003466] pl-3 leading-snug">
                             "{org.phrase_descriptive}"
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-3">
-                            <h5 className="text-[9px] font-black px-2 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Habitat</h5>
-                            <ul className="text-[10px] text-slate-600 space-y-1">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <h5 className="text-[8px] font-black px-1.5 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Habitat</h5>
+                            <ul className="text-[9px] text-slate-600 space-y-0.5 leading-tight">
                               <li><span className="font-bold opacity-60">Lieu :</span> {org.habitat}</li>
                               <li><span className="font-bold opacity-60">Étage :</span> {org.position_eau}</li>
-                              <li><span className="font-bold opacity-60">Zone :</span> {org.zone_geo}</li>
                             </ul>
                           </div>
-                          <div className="space-y-3">
-                            <h5 className="text-[9px] font-black px-2 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Mode de vie</h5>
-                            <ul className="text-[10px] text-slate-600 space-y-1">
+                          <div className="space-y-2">
+                            <h5 className="text-[8px] font-black px-1.5 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Mode de vie</h5>
+                            <ul className="text-[9px] text-slate-600 space-y-0.5 leading-tight">
                               <li><span className="font-bold opacity-60">Régime :</span> {org.alimentation}</li>
-                              <li><span className="font-bold opacity-60">Type :</span> {org.mode_de_vie}</li>
-                              <li><span className="font-bold opacity-60">Action :</span> {org.comportement}</li>
+                              <li><span className="font-bold opacity-60">Compt. :</span> {org.comportement}</li>
                             </ul>
                           </div>
                         </div>
@@ -1277,41 +1269,47 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Global Sections (Lecture Écologique & Regard Plongeur) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 pt-8 border-t border-slate-100">
-                <div className="space-y-4">
-                  <h2 className="text-base font-bold text-[#003466] uppercase tracking-[0.1em]">2. Lecture Écologique de la Scène</h2>
-                  <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-[11px] text-slate-700 space-y-3 leading-relaxed">
+              {/* Global Sections */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 print-grid-2 gap-6 mb-8 pt-4 border-t border-slate-100">
+                <div className="space-y-3 print-no-break">
+                  <h2 className="text-sm font-bold text-[#003466] uppercase tracking-[0.1em]">2. Lecture Écologique</h2>
+                  <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm text-[10px] text-slate-700 space-y-2 leading-relaxed">
                     <p><strong>Écosystème :</strong> {result.lecture_ecologique.ecosysteme}</p>
                     <p><strong>Biodiversité :</strong> {result.lecture_ecologique.biodiversite}</p>
-                    <p><strong>Interactions :</strong> {result.lecture_ecologique.interactions}</p>
-                    <p><strong>État du milieu :</strong> {result.lecture_ecologique.etat_milieu}</p>
+                    <p><strong>État :</strong> {result.lecture_ecologique.etat_milieu}</p>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h2 className="text-base font-bold text-[#003466] uppercase tracking-[0.1em]">3. Regard Plongeur Experte</h2>
-                  <div className="bg-[#003466] text-white p-6 rounded-3xl shadow-lg shadow-blue-900/10 text-[11px] space-y-3 leading-relaxed">
-                    <p><strong className="text-cyan-400">Ce que voit un débutant :</strong> {result.regard_plongeur.debutant}</p>
-                    <p><strong className="text-cyan-400">Ce que voit un plongeur attentif :</strong> {result.regard_plongeur.attentif}</p>
+                <div className="space-y-3 print-no-break">
+                  <h2 className="text-sm font-bold text-[#003466] uppercase tracking-[0.1em]">3. Regard Plongeur Expert</h2>
+                  <div className="bg-[#003466] text-white p-5 rounded-2xl shadow-lg shadow-blue-900/10 text-[10px] space-y-2 leading-relaxed">
+                    <p><strong className="text-cyan-400">Pour le débutant :</strong> {result.regard_plongeur.debutant}</p>
+                    <p><strong className="text-cyan-400">Pour l'attentif :</strong> {result.regard_plongeur.attentif}</p>
                     <p><strong className="text-cyan-400">Idées reçues :</strong> {result.regard_plongeur.mal_compris}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Limites & Footer simple */}
-              <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col gap-4">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg text-[10px] text-slate-400 italic">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span><strong>Limites de l'analyse :</strong> {result.limites_analyse}</span>
+              {/* Limites & Footer */}
+              <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-3 pb-2 shrink-0">
+                <div className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg text-[9px] text-slate-400 italic">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span><strong>Limites :</strong> {result.limites_analyse}</span>
                 </div>
                 
-                <div className="flex justify-between items-center text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-2">
+                <div className="flex justify-between items-center text-[9px] font-bold text-slate-300 uppercase tracking-widest pt-1 px-1">
                   <span>Diving Aware © {new Date().getFullYear()}</span>
                   <span>www.diving-aware.com</span>
                 </div>
               </div>
 
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  .print-grid-3 { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1.5rem !important; }
+                  .print-grid-2 { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 1.5rem !important; }
+                  .print-no-break { break-inside: avoid !important; }
+                }
+              `}} />
             </div>
           ) : (
             <div className="flex-1 bg-white shadow-2xl rounded-[32px] p-12 min-h-[500px] flex flex-col items-center justify-center text-slate-500 print:hidden">
