@@ -302,6 +302,8 @@ export default function App() {
     setImagePreview(null);
   };
 
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex items-center justify-center p-4">
@@ -310,13 +312,43 @@ export default function App() {
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Diving Aware</h1>
           <p className="text-slate-600 mb-8">Connectez-vous pour découvrir la biodiversité marine locale.</p>
           <button
-            onClick={() => signInWithPopup(auth, googleProvider)}
-            className="w-full bg-[#003466] text-white py-3 rounded-xl font-bold hover:bg-[#00284d] transition-all"
+            disabled={isLoggingIn}
+            onClick={async () => {
+              setIsLoggingIn(true);
+              try {
+                await signInWithPopup(auth, googleProvider);
+              } catch (err: any) {
+                console.error("Erreur de connexion:", err);
+                if (err.code === 'auth/popup-blocked') {
+                  alert(language === 'fr' 
+                    ? "Le pop-up de connexion a été bloqué par votre navigateur. Veuillez autoriser les pop-ups ou essayer d'ouvrir l'application dans un nouvel onglet." 
+                    : "The sign-in popup was blocked by your browser. Please allow popups or try opening the app in a new tab.");
+                } else if (err.code === 'auth/operation-not-allowed') {
+                  alert("L'authentification Google n'est pas encore activée dans votre console Firebase.");
+                } else {
+                  alert(`Erreur de connexion: ${err.message}`);
+                }
+              } finally {
+                setIsLoggingIn(false);
+              }
+            }}
+            className={`w-full bg-[#003466] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isLoggingIn ? 'opacity-70 cursor-wait' : 'hover:bg-[#00284d]'}`}
           >
-            Se connecter avec Google
+            {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            {language === 'fr' ? 'Se connecter avec Google' : 'Sign in with Google'}
           </button>
-          <div className="mt-6 text-xs text-slate-400">
-            En vous connectant, vous bénéficiez de {DAILY_QUOTA_LIMIT} analyses gratuites par jour.
+          
+          <div className="mt-8 pt-6 border-t border-slate-100 w-full">
+            <p className="text-xs text-slate-400 mb-4">
+              {language === 'fr' 
+                ? `En vous connectant, vous bénéficiez de ${DAILY_QUOTA_LIMIT} analyses gratuites par jour.` 
+                : `By signing in, you get ${DAILY_QUOTA_LIMIT} free analyses per day.`}
+            </p>
+            <div className="bg-sky-50 p-3 rounded-lg text-[10px] text-sky-700 leading-tight">
+              {language === 'fr'
+                ? "💡 Astuce : Si rien ne se passe, cliquez sur la fleche en haut à droite pour ouvrir l'application dans un nouvel onglet."
+                : "💡 Tip: If nothing happens, click the arrow in the top right corner to open the app in a new tab."}
+            </div>
           </div>
         </div>
       </div>
