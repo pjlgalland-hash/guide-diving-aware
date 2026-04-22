@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock } from 'lucide-react';
+import { Camera, Upload, Loader2, Image as ImageIcon, Waves, AlertCircle, Printer, MapPin, Utensils, Info, Lock, CheckCircle2 } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { db, auth, googleProvider, UserStats } from './lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { loadStripe } from '@stripe/stripe-js';
 
 const DAILY_QUOTA_LIMIT = 3;
 const ADMIN_EMAIL = 'pjl.galland@gmail.com';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 interface DiveAnalysisOrganism {
     nom_commun: string;
@@ -71,7 +74,63 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [userUsage, setUserUsage] = useState<UserStats | null>(null);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'cancel' | null>(null);
+  const [showCenterSettings, setShowCenterSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check URL for payment status
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      setPaymentStatus('success');
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('payment') === 'cancel') {
+      setPaymentStatus('cancel');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handlePassionneeClick = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid, userEmail: user.email }),
+      });
+      
+      const { id } = await response.json();
+      const stripe = await stripePromise;
+      if (stripe && id) {
+        await stripe.redirectToCheckout({ sessionId: id });
+      }
+    } catch (error) {
+      console.error("Stripe Redirect Error:", error);
+      alert("Erreur lors de la redirection vers le paiement. Veuillez vérifier vos clés Stripe.");
+    }
+  };
+
+  const handleCenterSettingsUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user || !userUsage) return;
+    
+    const formData = new FormData(e.currentTarget);
+    const centerName = formData.get('centerName') as string;
+    const centerLogoUrl = formData.get('centerLogoUrl') as string;
+
+    try {
+      const docRef = doc(db, 'users', user.uid, 'stats', 'usage');
+      await updateDoc(docRef, { centerName, centerLogoUrl });
+      setUserUsage({ ...userUsage, centerName, centerLogoUrl });
+      alert(language === 'fr' ? "Paramètres du centre mis à jour !" : "Center settings updated!");
+      setShowCenterSettings(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error updating settings");
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -94,18 +153,29 @@ export default function App() {
 
       if (docSnap.exists()) {
         const data = docSnap.data() as UserStats;
+        
+        // If payment was successful, update Firestore (Simplified for now)
+        if (paymentStatus === 'success' && !data.isPremium) {
+          await updateDoc(docRef, { isPremium: true });
+          data.isPremium = true;
+        }
+
         if (data.lastAnalysisDate !== today) {
-          // Reset for new day (done on next write, but let's update UI)
           setUserUsage({ ...data, dailyCount: 0, lastAnalysisDate: today });
           setIsQuotaExceeded(false);
         } else {
           setUserUsage(data);
-          if (auth.currentUser?.email !== ADMIN_EMAIL && data.dailyCount >= DAILY_QUOTA_LIMIT) {
+          // Check quota if NOT admin and NOT premium
+          if (auth.currentUser?.email !== ADMIN_EMAIL && !data.isPremium && data.dailyCount >= DAILY_QUOTA_LIMIT) {
             setIsQuotaExceeded(true);
           }
         }
       } else {
-        setUserUsage({ userId, dailyCount: 0, lastAnalysisDate: today });
+        // Success payment but no doc yet
+        const isPremium = paymentStatus === 'success';
+        const newData: UserStats = { userId, dailyCount: 0, lastAnalysisDate: today, isPremium };
+        await setDoc(docRef, newData);
+        setUserUsage(newData);
         setIsQuotaExceeded(false);
       }
     } catch (e) {
@@ -114,7 +184,7 @@ export default function App() {
   };
 
   const incrementUsage = async (userId: string) => {
-    if (auth.currentUser?.email === ADMIN_EMAIL) return; // No increment for admin
+    if (auth.currentUser?.email === ADMIN_EMAIL || userUsage?.isPremium || userUsage?.isDiveCenter) return; 
 
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -195,7 +265,7 @@ export default function App() {
   const analyzeImage = async () => {
     if (!imageFile || !user) return;
 
-    if (user.email !== ADMIN_EMAIL && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
+    if (user.email !== ADMIN_EMAIL && !userUsage?.isPremium && !userUsage?.isDiveCenter && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
       setIsQuotaExceeded(true);
       return;
     }
@@ -433,7 +503,7 @@ export default function App() {
                   <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{language === 'fr' ? 'Guide de Plongée' : 'Diving Guide'}</h1>
                   <p className="text-[#003466] text-xs font-bold uppercase tracking-[0.2em] opacity-60">Diving Aware</p>
                 </div>
-                {user.email !== ADMIN_EMAIL && (
+                {user.email !== ADMIN_EMAIL && !userUsage?.isPremium && (
                   <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
                     <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -441,10 +511,15 @@ export default function App() {
                     </span>
                   </div>
                 )}
-                {user.email === ADMIN_EMAIL && (
+                {(user.email === ADMIN_EMAIL || userUsage?.isPremium || userUsage?.isDiveCenter) && (
                   <div className="bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+                    <CheckCircle2 className="w-3 h-3 text-sky-700" />
                     <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">
-                      Accès Admin Illimité
+                      {user.email === ADMIN_EMAIL 
+                        ? 'Accès Admin Illimité' 
+                        : userUsage?.isDiveCenter 
+                          ? (language === 'fr' ? 'Offre Centre de Plongée' : 'Dive Center Plan')
+                          : (language === 'fr' ? 'Offre Passionnée Active' : 'Premium Plan Active')}
                     </span>
                   </div>
                 )}
@@ -533,21 +608,75 @@ export default function App() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             {isQuotaExceeded && (
-              <div className="w-full mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col items-center gap-4 text-center">
-                <Lock className="w-10 h-10 text-amber-600" />
+              <div className="w-full mb-6 bg-white border-2 border-amber-200 rounded-[32px] p-6 sm:p-8 shadow-xl shadow-amber-900/5 flex flex-col items-center gap-6 text-center animate-in fade-in zoom-in duration-500">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                  <Lock className="w-8 h-8" />
+                </div>
                 <div>
-                  <h3 className="font-bold text-amber-900">{language === 'fr' ? 'Quota atteint' : 'Quota reached'}</h3>
-                  <p className="text-sm text-amber-800 mt-1">
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {language === 'fr' ? 'Quota quotidien atteint' : 'Daily quota reached'}
+                  </h3>
+                  <p className="text-slate-600 mt-2 text-sm leading-relaxed">
                     {language === 'fr' 
-                      ? `Vous avez utilisé vos ${DAILY_QUOTA_LIMIT} analyses gratuites pour aujourd'hui.` 
-                      : `You have used your ${DAILY_QUOTA_LIMIT} free analyses for today.`}
-                  </p>
-                  <p className="text-xs text-amber-700 mt-4 leading-relaxed font-medium">
-                    {language === 'fr'
-                      ? "Offre Passionnée (Illimité) bientôt disponible ! Contactez-nous pour équiper votre centre de plongée."
-                      : "Premium Offer (Unlimited) coming soon! Contact us to equip your dive center."}
+                      ? "Vous appréciez Diving Aware ? Pour continuer à analyser vos photos sans limite aujourd'hui, passez à l'offre supérieure." 
+                      : "Enjoying Diving Aware? To keep analyzing your photos without limits today, upgrade your plan."}
                   </p>
                 </div>
+
+                <div className="grid grid-cols-1 gap-4 w-full">
+                  {/* Offre Passionnée */}
+                  <div className="bg-gradient-to-br from-sky-50 to-white border border-sky-100 rounded-2xl p-5 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-sky-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">OFFRE</span>
+                      <span className="font-bold text-sky-900 italic">Passionnée</span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {language === 'fr' ? "Analyses illimitées • Accès PRIORITAIRE" : "Unlimited analyses • PRIORITY access"}
+                    </p>
+                    <button 
+                      onClick={handlePassionneeClick}
+                      className="w-full bg-sky-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-sky-700 transition-all shadow-md shadow-sky-900/10 active:scale-95"
+                    >
+                      {language === 'fr' ? "Débloquer l'illimité — 4,99€ / mois" : "Unlock Unlimited — €4.99 / month"}
+                    </button>
+                    <p className="text-[10px] text-slate-400 italic"> Sans engagement, résiliable en 1 clic</p>
+                  </div>
+
+                  {/* Offre Centre de Plongée */}
+                  <div className="bg-slate-900 text-white border border-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-cyan-400" />
+                      <span className="font-bold text-cyan-500">{language === 'fr' ? 'Centre de Plongée' : 'Dive Center'}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 px-4">
+                      {language === 'fr' 
+                        ? "Valorisez votre image de marque sur les souvenirs PDF de vos plongeurs." 
+                        : "Enhance your brand image on your divers' PDF memories."}
+                    </p>
+                    <button 
+                      onClick={() => {
+                        // For demo purposes, we allow the user to activate center mode to see the effect
+                        if (confirm(language === 'fr' ? "Voulez-vous simuler l'activation du mode CENTRE pour tester vos logos ?" : "Do you want to simulate Center mode activation to test your logos?")) {
+                          const docRef = doc(db, 'users', user?.uid!, 'stats', 'usage');
+                          updateDoc(docRef, { isDiveCenter: true }).then(() => {
+                            setUserUsage({...userUsage!, isDiveCenter: true});
+                            setShowCenterSettings(true);
+                          });
+                        }
+                      }}
+                      className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all active:scale-95"
+                    >
+                      {language === 'fr' ? "Votre LOGO sur la fiche" : "Your LOGO on the report"}
+                    </button>
+                    <p className="text-[10px] text-slate-500">Service Pro • Fidélisation client</p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 px-6 italic">
+                  {language === 'fr'
+                    ? "En choisissant une offre, vous soutenez la recherche et la préservation de la biodiversité marine."
+                    : "By choosing a plan, you support research and the preservation of marine biodiversity."}
+                </p>
               </div>
             )}
             <button
@@ -591,6 +720,46 @@ export default function App() {
               <p className="text-sm">{error}</p>
             </div>
           )}
+
+          {userUsage?.isDiveCenter && (
+            <div className="mt-8 pt-8 border-t border-slate-100">
+              <button 
+                onClick={() => setShowCenterSettings(!showCenterSettings)}
+                className="w-full flex items-center justify-between text-slate-700 hover:text-[#003466] transition-colors"
+              >
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <MapPin className="w-4 h-4" />
+                  {language === 'fr' ? "PARAMÈTRES DU CENTRE" : "CENTER SETTINGS"}
+                </div>
+                <span className="text-xs">{showCenterSettings ? '−' : '+'}</span>
+              </button>
+              
+              {showCenterSettings && (
+                <form onSubmit={handleCenterSettingsUpdate} className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nom du Centre</label>
+                    <input 
+                      name="centerName" 
+                      defaultValue={userUsage.centerName}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">URL du Logo (PNG de préférence)</label>
+                    <input 
+                      name="centerLogoUrl" 
+                      defaultValue={userUsage.centerLogoUrl}
+                      placeholder="https://..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                    />
+                  </div>
+                  <button className="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-black transition-all">
+                    {language === 'fr' ? "Enregistrer les modifications" : "Save Changes"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column: PDF Preview Area */}
@@ -615,9 +784,29 @@ export default function App() {
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-[#003466] tracking-tight flex-1 font-serif uppercase">
-                  {language === 'fr' ? 'Guide d’identification – Diving Aware' : 'Identification Guide – Diving Aware'}
-                </h1>
+                
+                <div className="flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#003466] tracking-tight font-serif uppercase">
+                    {language === 'fr' ? 'Guide d’identification' : 'Identification Guide'}
+                  </h1>
+                  <p className="text-xs text-slate-400 font-bold tracking-widest uppercase mt-0.5">Diving Aware</p>
+                </div>
+
+                {userUsage?.isDiveCenter && userUsage.centerLogoUrl && (
+                  <div className="flex flex-col items-center gap-1 border-l-2 border-slate-100 pl-6">
+                    <div className="w-20 h-20 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img 
+                        src={userUsage.centerLogoUrl} 
+                        alt={userUsage.centerName || 'Center Logo'} 
+                        className="w-full h-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    {userUsage.centerName && (
+                      <p className="text-[9px] font-bold text-[#003466] uppercase tracking-[0.1em]">{userUsage.centerName}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Photo */}

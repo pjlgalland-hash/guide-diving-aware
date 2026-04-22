@@ -13,4 +13,7 @@ export interface UserStats {
   dailyCount: number;
   lastAnalysisDate: string;
   isPremium?: boolean;
+  isDiveCenter?: boolean;
+  centerLogoUrl?: string;
+  centerName?: string;
 }
