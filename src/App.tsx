@@ -67,6 +67,8 @@ interface DiveAnalysisOrganism {
 }
 
 interface DiveAnalysis {
+  est_aquatique: boolean;
+  message_validation: string;
   organismes: DiveAnalysisOrganism[];
   lecture_ecologique: {
     ecosysteme: string;
@@ -82,11 +84,17 @@ interface DiveAnalysis {
   limites_analyse: string;
 }
 
-const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin expérimenté et génère une fiche pédagogique experte (A4) pour plongeurs.
+const PROMPT = `Tu es un expert en biologie marine. Avant toute analyse, vérifie si l'image représente une scène aquatique ou sous-marine.
+Si l'image n'est pas aquatique ou sous-marine (ex: photo de ville, intérieur, personne hors de l'eau, objet terrestre), réponds avec est_aquatique: false et explique pourquoi dans message_validation.
+
+Si l'image est valide, réponds avec est_aquatique: true et analyse la photo comme un biologiste marin expérimenté pour générer une fiche pédagogique experte (A4) pour plongeurs.
 
 ⚠️ OBJECTIF : Identifier les organismes avec un raisonnement explicite.
 
 Structure de réponse (JSON strict) :
+0. VALIDATION :
+- est_aquatique : boolean (true si aquatique/sous-marin, false sinon).
+- message_validation : string (message explicatif si non aquatique, ou confirmation si valide).
 
 1. ANALYSE BIOLOGIQUE APPROFONDIE (Par organisme) :
 - indices_visuels : forme, texture, couleur (corrigée), position, interaction.
@@ -390,6 +398,8 @@ export default function App() {
           responseSchema: {
             type: Type.OBJECT,
             properties: {
+              est_aquatique: { type: Type.BOOLEAN },
+              message_validation: { type: Type.STRING },
               organismes: {
                 type: Type.ARRAY,
                 items: {
@@ -455,15 +465,23 @@ export default function App() {
               },
               limites_analyse: { type: Type.STRING }
             },
-            required: ["organismes", "lecture_ecologique", "regard_plongeur", "limites_analyse"]
+            required: ["est_aquatique", "message_validation", "organismes", "lecture_ecologique", "regard_plongeur", "limites_analyse"]
           }
         }
       });
 
       if (response && response.candidates && response.candidates[0]) {
         const data = JSON.parse(response.candidates[0].content.parts[0].text || '{}') as DiveAnalysis;
-        setResult(data);
-        await incrementUsage(user.uid);
+        
+        if (data.est_aquatique === false) {
+          setError(data.message_validation || (language === 'fr' 
+            ? "Cette photo ne semble pas être une prise de vue aquatique ou sous-marine. Diving Aware n'analyse que la biodiversité marine." 
+            : "This photo does not appear to be an aquatic or underwater shot. Diving Aware only analyzes marine biodiversity."));
+          setResult(null);
+        } else {
+          setResult(data);
+          await incrementUsage(user.uid);
+        }
       } else {
         throw new Error("Format de réponse invalide.");
       }
