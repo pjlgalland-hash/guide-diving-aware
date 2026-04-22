@@ -27,58 +27,96 @@ const COLLABORATORS = [
 
 const isTeamMember = (email?: string | null) => email ? COLLABORATORS.includes(email) : false;
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 interface DiveAnalysisOrganism {
+    // 1. ANALYSE BIOLOGIQUE APPROFONDIE
+    indices_visuels: {
+        forme: string;
+        texture: string;
+        couleur: string;
+        position: string;
+        interaction: string;
+    };
+    hypotheses: {
+        nom_commun: string;
+        nom_scientifique: string;
+    }[];
+    comparaison_especes: string;
+    choix_final_raison: string;
+    confiance: string;
+    justification_biologique: string;
+    risque_confusion: string;
+    indices_determinants: string[];
+
+    // 2. CLASSIFICATION & DESCRIPTION
+    type: string;
     nom_commun: string;
     nom_scientifique: string;
-    confiance: string;
-    observation: string;
-    justification: string;
-    type: string;
     regne: string;
     famille: string;
     phrase_descriptive: string;
+
+    // 3. ÉCOLOGIE
     habitat: string;
+    position_eau: string;
+    zone_geo: string;
     alimentation: string;
+    mode_de_vie: string;
+    comportement: string;
 }
 
 interface DiveAnalysis {
-  vue_ensemble: string;
   organismes: DiveAnalysisOrganism[];
-  verification_critique: string;
-  synthese: string;
+  lecture_ecologique: {
+    ecosysteme: string;
+    biodiversite: string;
+    interactions: string;
+    etat_milieu: string;
+  };
+  regard_plongeur: {
+    debutant: string;
+    attentif: string;
+    mal_compris: string;
+  };
+  limites_analyse: string;
 }
 
-const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin et génère une fiche pédagogique Diving Aware (A4).
+const PROMPT = `Analyse cette photo sous-marine comme un biologiste marin expérimenté et génère une fiche pédagogique experte (A4) pour plongeurs.
 
-⚠️ IMPORTANT : Génère TOUT le contenu dans la langue demandée par l'utilisateur (Français ou Anglais).
-- Traduis TOUS les labels, titres, catégories (y compris 'Type', 'Règne', 'Habitat', 'Alimentation'), et les valeurs (par ex: 'Poisson'/'Fish', 'Éponge'/'Sponge', 'Animal'/'Animal').
+⚠️ OBJECTIF : Identifier les organismes avec un raisonnement explicite.
 
-Objectif : Identifier les organismes, pas seulement décrire la scène.
+Structure de réponse (JSON strict) :
 
-1. ANALYSE D’IDENTIFICATION
-Pour chaque organisme visible :
-- Observation : indices visuels.
-- Identification : Nom commun, Nom scientifique.
-- Confiance : Élevé / Moyen / Faible (ou High / Medium / Low).
-- Justification : 1-2 phrases.
+1. ANALYSE BIOLOGIQUE APPROFONDIE (Par organisme) :
+- indices_visuels : forme, texture, couleur (corrigée), position, interaction.
+- hypotheses : 1-3 espèces possibles (nom_commun, nom_scientifique).
+- comparaison_especes : différences avec espèces proches.
+- choix_final_raison : espèce retenue et pourquoi.
+- confiance : Élevé / Moyen / Faible.
+- justification_biologique : critère déterminant en 1 phrase.
+- risque_confusion : "Peut être confondu avec...".
+- indices_determinants : liste de 2-4 points clés.
 
-2. CLASSIFICATION BIOLOGIQUE
-Type (poisson, corail, etc.), Règne, Famille.
+2. CLASSIFICATION & DESCRIPTION (Par organisme) :
+- phrase_descriptive : "(Nom scientifique), aussi appelé (nom commun), est une espèce que l’on trouve dans...".
+- Famille, Règne, Type.
 
-3. ÉCOLOGIE
-Habitat, Mode de vie / alimentation.
+3. ÉCOLOGIE (Par organisme) :
+- habitat (récif, sable...), position_eau, zone_geo.
+- alimentation (carnivore...), mode_de_vie, comportement.
 
-4. VÉRIFICATION CRITIQUE
-Cohérence forme/habitat/comportement.
+4. LECTURE ÉCOLOGIQUE DE LA SCÈNE (Global) :
+- ecosysteme, biodiversite (niveau), interactions, etat_milieu.
 
-5. SYNTHÈSE
-Synthèse pédagogique et message clé.
+5. REGARD PLONGEUR (Global) :
+- debutant (ce qu'il voit), attentif (détails cachés), mal_compris (idées reçues).
 
-6. URL & RÉFÉRENCE
-- Sur la fiche pédagogique, tu DOIS TOUJOURS afficher uniquement l'URL : https://diving-aware.com
-- Il est strictement INTERDIT d'utiliser ou d'afficher l'URL : guide-diving-aware.vercel.app`;
+6. LIMITES DE L'ANALYSE (Global) :
+- ce qui manque pour une certitude absolue.
+
+⚠️ IMPORTANT : Tout le contenu doit être dans la langue de l'utilisateur (Français ou Anglais).
+URL de référence unique : https://diving-aware.com`;
 
 export default function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -123,7 +161,7 @@ export default function App() {
       const { id } = await response.json();
       const stripe = await stripePromise;
       if (stripe && id) {
-        await stripe.redirectToCheckout({ sessionId: id });
+        await (stripe as any).redirectToCheckout({ sessionId: id });
       }
     } catch (error) {
       console.error("Stripe Redirect Error:", error);
@@ -344,38 +382,80 @@ export default function App() {
       };
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [imagePart, textPart] },
         config: {
-          temperature: 0.4,
+          temperature: 0.2,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              vue_ensemble: { type: Type.STRING, description: "2-3 phrases sur la vue d'ensemble (fond, profondeur, ambiance)" },
               organismes: {
                 type: Type.ARRAY,
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    type: { type: Type.STRING, description: "Type (poisson, corail, etc.)" },
-                    regne: { type: Type.STRING, description: "animal / végétal / autre" },
-                    famille: { type: Type.STRING, description: "Famille ou groupe biologique" },
-                    nom_commun: { type: Type.STRING, description: "Nom commun ou 'je ne sais pas'" },
-                    nom_scientifique: { type: Type.STRING, description: "Nom scientifique ou 'je ne sais pas'" },
-                    confiance: { type: Type.STRING, description: "Niveau de confiance: ✅ Élevé, ⚠️ Moyen ou ❌ Faible" },
-                    observation: { type: Type.STRING, description: "Indices visuels: forme, couleur, comportement" },
-                    justification: { type: Type.STRING, description: "Pourquoi l'identification est proposée (1-2 phrases)" },
-                    phrase_descriptive: { type: Type.STRING, description: "Ex: (Nom scientifique), aussi appelé (nom commun), est une espèce que l'on trouve dans..." },
-                    habitat: { type: Type.STRING, description: "Lieu de vie (sable, récif, pleine eau, etc.)" },
-                    alimentation: { type: Type.STRING, description: "prédateur / herbivore / filtreur / photosynthèse, etc." }
+                    indices_visuels: {
+                      type: Type.OBJECT,
+                      properties: {
+                        forme: { type: Type.STRING },
+                        texture: { type: Type.STRING },
+                        couleur: { type: Type.STRING },
+                        position: { type: Type.STRING },
+                        interaction: { type: Type.STRING }
+                      }
+                    },
+                    hypotheses: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          nom_commun: { type: Type.STRING },
+                          nom_scientifique: { type: Type.STRING }
+                        }
+                      }
+                    },
+                    comparaison_especes: { type: Type.STRING },
+                    choix_final_raison: { type: Type.STRING },
+                    confiance: { type: Type.STRING },
+                    justification_biologique: { type: Type.STRING },
+                    risque_confusion: { type: Type.STRING },
+                    indices_determinants: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    type: { type: Type.STRING },
+                    nom_commun: { type: Type.STRING },
+                    nom_scientifique: { type: Type.STRING },
+                    regne: { type: Type.STRING },
+                    famille: { type: Type.STRING },
+                    phrase_descriptive: { type: Type.STRING },
+                    habitat: { type: Type.STRING },
+                    position_eau: { type: Type.STRING },
+                    zone_geo: { type: Type.STRING },
+                    alimentation: { type: Type.STRING },
+                    mode_de_vie: { type: Type.STRING },
+                    comportement: { type: Type.STRING }
                   }
                 }
               },
-              verification_critique: { type: Type.STRING, description: "Vérification de la cohérence forme/habitat/comportement avec signalement d'incohérences si besoin" },
-              synthese: { type: Type.STRING, description: "Synthèse pédagogique et message clé plongeur" }
+              lecture_ecologique: {
+                type: Type.OBJECT,
+                properties: {
+                  ecosysteme: { type: Type.STRING },
+                  biodiversite: { type: Type.STRING },
+                  interactions: { type: Type.STRING },
+                  etat_milieu: { type: Type.STRING }
+                }
+              },
+              regard_plongeur: {
+                type: Type.OBJECT,
+                properties: {
+                  debutant: { type: Type.STRING },
+                  attentif: { type: Type.STRING },
+                  mal_compris: { type: Type.STRING }
+                }
+              },
+              limites_analyse: { type: Type.STRING }
             },
-            required: ["vue_ensemble", "organismes", "verification_critique", "synthese"]
+            required: ["organismes", "lecture_ecologique", "regard_plongeur", "limites_analyse"]
           }
         }
       });
@@ -1063,123 +1143,146 @@ export default function App() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-8 mb-6">
-                <div>
-                  <h2 className="text-lg font-bold text-sky-800 mb-2 uppercase tracking-wide border-l-4 border-sky-400 pl-3">
-                    {language === 'fr' ? "Vue d'ensemble" : "Overview"}
-                  </h2>
-                  <p className="text-sm leading-relaxed text-slate-700">{result.vue_ensemble}</p>
-                </div>
-              </div>
-
               {/* Fiches Organismes */}
-              <div className="mb-8">
-                <h2 className="text-lg font-bold text-sky-800 mb-4 uppercase tracking-wide border-l-4 border-sky-400 pl-3 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-sky-600" />
-                  {language === 'fr' ? "Identification Biologique" : "Biological Identification"}
+              <div className="mb-8 flex-1">
+                <h2 className="text-xl font-bold text-[#003466] mb-5 uppercase tracking-[0.2em] border-b border-slate-100 pb-2">
+                  1. Identification Biologique & Raisonnement
                 </h2>
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 gap-12">
                   {result.organismes.map((org, index) => (
-                    <div key={index} className="bg-sky-50/30 border border-sky-100 p-5 rounded-2xl flex flex-col gap-3">
+                    <div key={index} className="flex flex-col gap-6 break-inside-avoid">
                       
-                      {/* Entête organisme */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-2">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-bold text-slate-900 capitalize text-lg">{org.nom_commun}</h3>
-                            <span className="text-[12px] uppercase font-bold text-white bg-[#003466] px-2 py-0.5 rounded shadow-sm">
-                              {org.type}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600 italic font-serif">
-                            {org.nom_scientifique} 
-                            <span className="ml-2 text-xs not-italic font-sans text-[#003466] font-medium">({org.famille})</span>
-                          </p>
+                      {/* En-tête Organisme */}
+                      <div className="flex gap-4 items-center">
+                        <div className="w-8 h-8 rounded-full bg-[#003466] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                          {index + 1}
                         </div>
-                        <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 shadow-sm whitespace-nowrap">
-                          {language === 'fr' ? 'Confiance' : 'Confidence'} : {org.confiance}
+                        <div className="flex-1 border-b border-slate-200 pb-1">
+                          <h3 className="text-xl font-bold text-slate-900 capitalize flex items-center gap-3">
+                            {org.nom_commun}
+                            <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest">{org.type}</span>
+                            <span className="ml-auto text-xs font-medium text-slate-400">Confiance : {org.confiance}</span>
+                          </h3>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Bloc Analyse */}
-                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">
-                            {language === 'fr' ? "🔬 Analyse Visuelle" : "🔬 Visual Analysis"}
-                          </p>
-                          <p className="text-xs leading-relaxed text-slate-600 mb-3">{org.observation}</p>
-                          <p className="text-xs font-bold text-[#003466] mb-1 uppercase tracking-wider">
-                            {language === 'fr' ? "⚖️ Justification" : "⚖️ Justification"}
-                          </p>
-                          <p className="text-xs leading-relaxed text-slate-600">{org.justification}</p>
+                      {/* Raisonnement Biologique (Indépendant des boîtes standards) */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* 1.1 Observations */}
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
+                            <Info className="w-3 h-3" /> Observations Prises
+                          </h4>
+                          <ul className="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                            <li><strong>Forme :</strong> {org.indices_visuels.forme}</li>
+                            <li><strong>Texture :</strong> {org.indices_visuels.texture}</li>
+                            <li><strong>Couleur :</strong> {org.indices_visuels.couleur}</li>
+                            <li><strong>Position :</strong> {org.indices_visuels.position}</li>
+                            <li><strong>Inter. :</strong> {org.indices_visuels.interaction}</li>
+                          </ul>
                         </div>
 
-                        {/* Bloc Écologie */}
-                        <div className="flex flex-col gap-3">
-                          <p className="text-xs text-white font-bold bg-[#003466] py-1.5 px-3 rounded w-max">
-                            {language === 'fr' ? "Règne" : "Kingdom"} : {org.regne}
+                        {/* 1.2 Hypothèses & Comparaison */}
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
+                            <AlertCircle className="w-3 h-3" /> Hypothèses & Analyse
+                          </h4>
+                          <div className="text-[11px] text-slate-600 space-y-3 leading-relaxed">
+                            <div>
+                              <p className="font-bold mb-1 opacity-70 italic text-[10px]">Espèces possibles :</p>
+                              {org.hypotheses.map((h, i) => (
+                                <p key={i} className="mb-0.5">• {h.nom_commun} <span className="italic">({h.nom_scientifique})</span></p>
+                              ))}
+                            </div>
+                            <p><strong>Différenciation :</strong> {org.comparaison_especes}</p>
+                          </div>
+                        </div>
+
+                        {/* 1.3 Choix Final & Sécurité */}
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-black text-[#003466] uppercase tracking-widest flex items-center gap-2">
+                            <CheckCircle2 className="w-3 h-3" /> Conclusion & Justification
+                          </h4>
+                          <div className="text-[11px] text-slate-600 space-y-3 leading-relaxed">
+                            <p><strong>Raison :</strong> {org.choix_final_raison}</p>
+                            <div className="p-2 bg-amber-50 rounded-lg border border-amber-100 text-amber-800 text-[10px]">
+                              <strong>Attention :</strong> {org.risque_confusion}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. & 3. Fiches de Description (Compact) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Classification</p>
+                            <p className="text-sm font-bold text-slate-900 italic font-serif underline decoration-[#003466] decoration-2 underline-offset-4">{org.nom_scientifique}</p>
+                            <p className="text-[10px] text-slate-500 mt-2">Famille : <span className="font-bold uppercase tracking-tighter">{org.famille}</span> • Règne : <span className="font-bold uppercase tracking-tighter">{org.regne}</span></p>
+                          </div>
+                          <p className="text-[11px] font-medium text-slate-700 italic border-l-2 border-[#003466] pl-4 leading-relaxed">
+                            "{org.phrase_descriptive}"
                           </p>
-                          <p className="text-xs leading-relaxed text-slate-700 italic border-l-2 border-[#003466] pl-3">"{org.phrase_descriptive}"</p>
-                          <div className="flex flex-col gap-2 mt-auto text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-[#003466] shrink-0" />
-                              <span><strong>Habitat :</strong> {org.habitat}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Utensils className="w-4 h-4 text-[#003466] shrink-0" />
-                              <span><strong>Alimentation :</strong> {org.alimentation}</span>
-                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <h5 className="text-[9px] font-black px-2 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Habitat</h5>
+                            <ul className="text-[10px] text-slate-600 space-y-1">
+                              <li><span className="font-bold opacity-60">Lieu :</span> {org.habitat}</li>
+                              <li><span className="font-bold opacity-60">Étage :</span> {org.position_eau}</li>
+                              <li><span className="font-bold opacity-60">Zone :</span> {org.zone_geo}</li>
+                            </ul>
+                          </div>
+                          <div className="space-y-3">
+                            <h5 className="text-[9px] font-black px-2 py-0.5 bg-[#003466] text-white rounded w-max uppercase tracking-widest">Mode de vie</h5>
+                            <ul className="text-[10px] text-slate-600 space-y-1">
+                              <li><span className="font-bold opacity-60">Régime :</span> {org.alimentation}</li>
+                              <li><span className="font-bold opacity-60">Type :</span> {org.mode_de_vie}</li>
+                              <li><span className="font-bold opacity-60">Action :</span> {org.comportement}</li>
+                            </ul>
                           </div>
                         </div>
                       </div>
 
                     </div>
                   ))}
-                  {result.organismes.length === 0 && (
-                    <p className="text-sm text-slate-500 italic p-4">Aucun organisme spécifiquement identifié dans l'image.</p>
-                  )}
                 </div>
               </div>
 
-              {/* Vérification Critique & Synthèse */}
-              <div className="mt-auto grid grid-cols-1 gap-6 bg-slate-50 border border-slate-200 p-6 rounded-2xl mb-6">
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <span className="text-sky-600 text-lg">💡</span> {language === 'fr' ? "Vérification Critique" : "Critical Verification"}
-                  </h2>
-                  <p className="text-xs leading-relaxed text-slate-700">{result.verification_critique}</p>
+              {/* Global Sections (Lecture Écologique & Regard Plongeur) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 pt-8 border-t border-slate-100">
+                <div className="space-y-4">
+                  <h2 className="text-base font-bold text-[#003466] uppercase tracking-[0.1em]">2. Lecture Écologique de la Scène</h2>
+                  <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-[11px] text-slate-700 space-y-3 leading-relaxed">
+                    <p><strong>Écosystème :</strong> {result.lecture_ecologique.ecosysteme}</p>
+                    <p><strong>Biodiversité :</strong> {result.lecture_ecologique.biodiversite}</p>
+                    <p><strong>Interactions :</strong> {result.lecture_ecologique.interactions}</p>
+                    <p><strong>État du milieu :</strong> {result.lecture_ecologique.etat_milieu}</p>
+                  </div>
                 </div>
-                <div className="border-t border-slate-200 pt-4">
-                  <h2 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <span className="text-sky-600 text-lg">🎯</span> {language === 'fr' ? "Synthèse" : "Synthesis"}
-                  </h2>
-                  <p className="text-xs leading-relaxed text-slate-700">{result.synthese}</p>
+
+                <div className="space-y-4">
+                  <h2 className="text-base font-bold text-[#003466] uppercase tracking-[0.1em]">3. Regard Plongeur Experte</h2>
+                  <div className="bg-[#003466] text-white p-6 rounded-3xl shadow-lg shadow-blue-900/10 text-[11px] space-y-3 leading-relaxed">
+                    <p><strong className="text-cyan-400">Ce que voit un débutant :</strong> {result.regard_plongeur.debutant}</p>
+                    <p><strong className="text-cyan-400">Ce que voit un plongeur attentif :</strong> {result.regard_plongeur.attentif}</p>
+                    <p><strong className="text-cyan-400">Idées reçues :</strong> {result.regard_plongeur.mal_compris}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 border border-slate-200 rounded-xl p-4 bg-sky-50 text-xs mt-6">
-                 <p className="font-bold text-sky-900 mb-1">
-                   {language === 'fr' ? "Différence animal / végétal :" : "Animal / Plant difference:"}
-                 </p>
-                 <ul className="list-disc list-inside text-slate-700 ml-1 space-y-0.5">
-                   <li><strong>{language === 'fr' ? "Animal" : "Animal"} :</strong> {language === 'fr' ? "mange de la nourriture, parfois bouge." : "eats food, sometimes moves."}</li>
-                   <li><strong>{language === 'fr' ? "Végétal / algue" : "Plant / Algae"} :</strong> {language === 'fr' ? "utilise la lumière (photosynthèse)." : "uses light (photosynthesis)."}</li>
-                 </ul>
-              </div>
-
-              {/* Message Impact */}
-              <div className="mt-8 text-center">
-                <p className="text-base sm:text-lg font-serif italic text-sky-800 font-medium px-4 py-3 bg-sky-50/50 rounded-lg inline-block border border-sky-100">
-                  {language === 'fr' 
-                    ? '"Sous l\'eau, ce qui semble immobile est souvent vivant."' 
-                    : '"Underwater, what seems immobile is often alive."'}
-                </p>
-              </div>
-
-              {/* Footer Logo & URL */}
-              <div className="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center text-slate-400">
-                <span className="text-xs tracking-widest uppercase font-semibold">Diving Aware ©</span>
-                <span className="text-xs font-medium">www.diving-aware.com</span>
+              {/* Limites & Footer simple */}
+              <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col gap-4">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg text-[10px] text-slate-400 italic">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span><strong>Limites de l'analyse :</strong> {result.limites_analyse}</span>
+                </div>
+                
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-2">
+                  <span>Diving Aware © {new Date().getFullYear()}</span>
+                  <span>www.diving-aware.com</span>
+                </div>
               </div>
 
             </div>
