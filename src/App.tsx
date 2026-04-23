@@ -129,7 +129,7 @@ export default function App() {
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'cancel' | null>(null);
   const [showCenterSettings, setShowCenterSettings] = useState(false);
-  const [legalView, setLegalView] = useState<'legal' | 'cookies' | 'cgu' | null>(null);
+  const [legalView, setLegalView] = useState<'legal' | 'cookies' | 'cgu' | 'privacy' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -681,6 +681,11 @@ export default function App() {
                     <Mail className="w-5 h-5" />
                     {language === 'fr' ? 'Se connecter par email' : 'Sign in with email'}
                   </button>
+                  <p className="text-[10px] text-slate-400 mt-4 text-center leading-relaxed">
+                    {language === 'fr' 
+                      ? "En vous connectant, vous acceptez notre politique de confidentialité." 
+                      : "By signing in, you agree to our privacy policy."}
+                  </p>
                 </>
               )}
             </div>
@@ -729,6 +734,7 @@ export default function App() {
                   {legalView === 'legal' && (language === 'fr' ? 'Mentions Légales' : 'Legal Notice')}
                   {legalView === 'cookies' && (language === 'fr' ? 'Gestion des Cookies' : 'Cookie Policy')}
                   {legalView === 'cgu' && (language === 'fr' ? 'Conditions Générales d’Utilisation' : 'Terms of Use')}
+                  {legalView === 'privacy' && (language === 'fr' ? 'Politique de Confidentialité' : 'Privacy Policy')}
                 </h2>
                 <button 
                   type="button"
@@ -789,6 +795,27 @@ export default function App() {
                     <section>
                       <h3 className="text-slate-900 font-bold text-base mb-2">3. Éthique et Environnement</h3>
                       <p>L'utilisateur s'engage à respecter le milieu marin : aucun contact physique avec la faune et la flore, respect des distances de sécurité.</p>
+                    </section>
+                  </div>
+                )}
+
+                {legalView === 'privacy' && (
+                  <div className="space-y-6">
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">1. Nature des données collectées</h3>
+                      <p>Nous collectons votre email et nom via Google Login, ainsi que les photos que vous soumettez pour analyse.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">2. Utilisation des images</h3>
+                      <p>Vos photos sont traitées exclusivement pour l'identification taxonomique via l'IA. Nous ne vendons jamais vos données à des tiers.</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">3. Services Tiers</h3>
+                      <p>Diving Aware utilise Google Firebase (hébergement), Google Gemini (IA) et Stripe (paiements sécurisés).</p>
+                    </section>
+                    <section>
+                      <h3 className="text-slate-900 font-bold text-base mb-2">4. Vos Droits</h3>
+                      <p>Vous disposez d'un droit d'accès, de rectification et de suppression de vos données en contactant pjl.galland@gmail.com.</p>
                     </section>
                   </div>
                 )}
@@ -1380,6 +1407,7 @@ export default function App() {
           </div>
           <div className="flex gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex-wrap justify-center">
             <button type="button" onClick={() => setLegalView('legal')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Mentions Légales' : 'Legal Notice'}</button>
+            <button type="button" onClick={() => setLegalView('privacy')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Confidentialité' : 'Privacy'}</button>
             <button type="button" onClick={() => setLegalView('cookies')} className="hover:text-[#003466] transition-colors cursor-pointer">{language === 'fr' ? 'Cookies' : 'Cookies Policy'}</button>
             <button type="button" onClick={() => setLegalView('cgu')} className="hover:text-[#003466] transition-colors cursor-pointer">CGU</button>
             <a href="mailto:pjl.galland@gmail.com" className="hover:text-[#003466] transition-colors">Contact</a>
