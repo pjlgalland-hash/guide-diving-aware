@@ -939,12 +939,12 @@ export default function App() {
           <div>
             
             <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
-              {language === 'fr' ? "Indices ou remarques pour l'IA (optionnel)" : "Clues or remarks for the AI (optional)"}
+              {language === 'fr' ? "Indices pour l'IA (Pays, mer, lieu, profondeur...)" : "Clues for the AI (Country, sea, location, depth...)"}
             </label>
             <input
               type="text"
               id="context"
-              placeholder={language === 'fr' ? "Ex: Le truc noir est une bonellie..." : "Ex: The black thing is a bonellia..."}
+              placeholder={language === 'fr' ? "Ex: France, Méditerranée, Marseille, 15m..." : "Ex: France, Mediterranean, Marseille, 15m..."}
               value={contextText}
               onChange={(e) => setContextText(e.target.value)}
               className="w-full bg-white shadow-sm border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-all"
