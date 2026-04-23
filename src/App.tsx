@@ -35,8 +35,11 @@ Vérifie si l'image représente une scène aquatique ou sous-marine. Si non, ré
 ÉTAPE 2 : ANALYSE TAXONOMIQUE EXPERTE
 - Utilise la nomenclature scientifique binominale à jour (WoRMS).
 - Pour chaque organisme, détaille la hiérarchie complète (Embranchement, Classe, Ordre, Famille).
+- ANALYSE DES SILHOUETTES : Pour les grands prédateurs, examine avec une précision chirurgicale la courbure des nageoires et la silhouette de la tête. 
+- INTERDICTION D'IDENTIFICATION ABUSIVE : Ne conclus JAMAIS à un Requin Marteau si le céphalofoil (tête en marteau) n'est pas distinctement visible. Dans ce cas, privilégie les Carcharhinidés (Requin Gris, Galápagos, Dagsit) en expliquant pourquoi.
+- DOUBLE VÉRIFICATION : Avant de valider le nom, vérifie s'il y a des pointes blanches (Requin Corail) ou un liseré noir (Dagsit) sur les nageoires.
 - Fournis une description taxonomique rigoureuse basée sur les caractères diagnostiques visibles (morphologie, phénotype).
-- Compare avec les espèces "confondues" (cryptiques) comme le ferait un expert de DORIS.
+- EXCLUSION RIGOUREUSE : Si tu hésites entre deux espèces (ex: Requin Marteaux vs Requin de récif), liste les critères qui t'ont fait exclure l'une au profit de l'autre.
 - Mentionne le statut de conservation IUCN officiel.
 - Justifie ton identification par des critères biologiques déterminants.
 
@@ -374,7 +377,7 @@ export default function App() {
       const textPart = { text: fullPrompt };
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: { parts: [imagePart, textPart] },
         config: {
           temperature: 0.2,
