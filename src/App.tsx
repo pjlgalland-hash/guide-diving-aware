@@ -40,8 +40,9 @@ Vérifie si l'image représente une scène aquatique ou sous-marine. Si non, ré
 - Mentionne le statut de conservation IUCN officiel.
 - Justifie ton identification par des critères biologiques déterminants.
 
-ÉTAPE 3 : ÉCOLOGIE & COMPORTEMENT
+ÉTAPE 3 : ÉCOLOGIE & PROTECTION
 - Habitat précis, distribution géographique typique, alimentation et comportement observé.
+- CONSEILS PLONGEUR : Donne 2-3 conseils spécifiques pour respecter et protéger cette espèce précise (ex: ne pas toucher, distance, fragilité au sédiment, etc.).
 
 Langue : Réponds exclusivement dans la langue demandée par l'utilisateur (Français ou Anglais).
 Niveau : Expert Mondial.`;
@@ -90,6 +91,7 @@ interface DiveAnalysisOrganism {
     alimentation: string;
     mode_de_vie: string;
     comportement: string;
+    conseils_protection: string;
 }
 
 interface DiveAnalysis {
@@ -429,8 +431,17 @@ export default function App() {
                     zone_geo: { type: Type.STRING },
                     alimentation: { type: Type.STRING },
                     mode_de_vie: { type: Type.STRING },
-                    comportement: { type: Type.STRING }
-                  }
+                    comportement: { type: Type.STRING },
+                    conseils_protection: { type: Type.STRING }
+                  },
+                  required: [
+                    "indices_visuels", "hypotheses", "comparaison_especes", "choix_final_raison", 
+                    "confiance", "justification_biologique", "risque_confusion", "indices_determinants", 
+                    "type", "nom_commun", "nom_scientifique", "regne", "embranchement", "classe", 
+                    "ordre", "famille", "statut_iucn", "phrase_descriptive", "description_taxonomique", 
+                    "habitat", "position_eau", "zone_geo", "alimentation", "mode_de_vie", "comportement",
+                    "conseils_protection"
+                  ]
                 }
               },
               lecture_ecologique: {
@@ -1277,6 +1288,19 @@ export default function App() {
                             </ul>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Engagement Eco-Plongeur - New Section */}
+                      <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-2xl shadow-sm mt-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Waves className="w-4 h-4 text-emerald-600" />
+                          <h4 className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">
+                            {language === 'fr' ? 'Engagement Eco-Plongeur' : 'Eco-Diver Commitment'}
+                          </h4>
+                        </div>
+                        <p className="text-[10px] text-emerald-800 leading-relaxed italic">
+                          {org.conseils_protection}
+                        </p>
                       </div>
 
                     </div>
