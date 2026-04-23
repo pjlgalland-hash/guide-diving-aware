@@ -45,7 +45,7 @@ Vérifie si l'image représente une scène aquatique ou sous-marine. Si non, ré
 
 ÉTAPE 3 : ÉCOLOGIE & PROTECTION
 - Habitat précis, distribution géographique typique, alimentation et comportement observé.
-- CONSEILS PLONGEUR : Donne 2-3 conseils spécifiques pour respecter et protéger cette espèce précise (ex: ne pas toucher, distance, fragilité au sédiment, etc.).
+- CONSEILS PLONGEUR : Donne 2-3 conseils spécifiques pour respecter et protéger cette espèce précise. SOIS TRÈS VIGILANT sur la sensibilité à la lumière (flash/phares) : si l'espèce est lucifuge, vit dans l'obscurité (grottes, failles) ou est fragile (macro, hippocampes), recommande explicitement de limiter ou d'éviter les éclairages violents.
 
 Langue : Réponds exclusivement dans la langue demandée par l'utilisateur (Français ou Anglais).
 Niveau : Expert Mondial.`;
