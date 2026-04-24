@@ -375,101 +375,118 @@ export default function App() {
       }
       
       const textPart = { text: fullPrompt };
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: { parts: [imagePart, textPart] },
-        config: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              est_aquatique: { type: Type.BOOLEAN },
-              message_validation: { type: Type.STRING },
-              organismes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    indices_visuels: {
+      const config = {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            est_aquatique: { type: Type.BOOLEAN },
+            message_validation: { type: Type.STRING },
+            organismes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  indices_visuels: {
+                    type: Type.OBJECT,
+                    properties: {
+                      forme: { type: Type.STRING },
+                      texture: { type: Type.STRING },
+                      couleur: { type: Type.STRING },
+                      position: { type: Type.STRING },
+                      interaction: { type: Type.STRING }
+                    }
+                  },
+                  hypotheses: {
+                    type: Type.ARRAY,
+                    items: {
                       type: Type.OBJECT,
                       properties: {
-                        forme: { type: Type.STRING },
-                        texture: { type: Type.STRING },
-                        couleur: { type: Type.STRING },
-                        position: { type: Type.STRING },
-                        interaction: { type: Type.STRING }
+                        nom_commun: { type: Type.STRING },
+                        nom_scientifique: { type: Type.STRING }
                       }
-                    },
-                    hypotheses: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          nom_commun: { type: Type.STRING },
-                          nom_scientifique: { type: Type.STRING }
-                        }
-                      }
-                    },
-                    comparaison_especes: { type: Type.STRING },
-                    choix_final_raison: { type: Type.STRING },
-                    confiance: { type: Type.STRING },
-                    justification_biologique: { type: Type.STRING },
-                    risque_confusion: { type: Type.STRING },
-                    indices_determinants: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    type: { type: Type.STRING },
-                    nom_commun: { type: Type.STRING },
-                    nom_scientifique: { type: Type.STRING },
-                    regne: { type: Type.STRING },
-                    embranchement: { type: Type.STRING },
-                    classe: { type: Type.STRING },
-                    ordre: { type: Type.STRING },
-                    famille: { type: Type.STRING },
-                    statut_iucn: { type: Type.STRING },
-                    phrase_descriptive: { type: Type.STRING },
-                    description_taxonomique: { type: Type.STRING },
-                    habitat: { type: Type.STRING },
-                    position_eau: { type: Type.STRING },
-                    zone_geo: { type: Type.STRING },
-                    alimentation: { type: Type.STRING },
-                    mode_de_vie: { type: Type.STRING },
-                    comportement: { type: Type.STRING },
-                    conseils_protection: { type: Type.STRING }
+                    }
                   },
-                  required: [
-                    "indices_visuels", "hypotheses", "comparaison_especes", "choix_final_raison", 
-                    "confiance", "justification_biologique", "risque_confusion", "indices_determinants", 
-                    "type", "nom_commun", "nom_scientifique", "regne", "embranchement", "classe", 
-                    "ordre", "famille", "statut_iucn", "phrase_descriptive", "description_taxonomique", 
-                    "habitat", "position_eau", "zone_geo", "alimentation", "mode_de_vie", "comportement",
-                    "conseils_protection"
-                  ]
-                }
-              },
-              lecture_ecologique: {
-                type: Type.OBJECT,
-                properties: {
-                  ecosysteme: { type: Type.STRING },
-                  biodiversite: { type: Type.STRING },
-                  interactions: { type: Type.STRING },
-                  etat_milieu: { type: Type.STRING }
-                }
-              },
-              regard_plongeur: {
-                type: Type.OBJECT,
-                properties: {
-                  debutant: { type: Type.STRING },
-                  attentif: { type: Type.STRING },
-                  mal_compris: { type: Type.STRING }
-                }
-              },
-              limites_analyse: { type: Type.STRING }
+                  comparaison_especes: { type: Type.STRING },
+                  choix_final_raison: { type: Type.STRING },
+                  confiance: { type: Type.STRING },
+                  justification_biologique: { type: Type.STRING },
+                  risque_confusion: { type: Type.STRING },
+                  indices_determinants: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  type: { type: Type.STRING },
+                  nom_commun: { type: Type.STRING },
+                  nom_scientifique: { type: Type.STRING },
+                  regne: { type: Type.STRING },
+                  embranchement: { type: Type.STRING },
+                  classe: { type: Type.STRING },
+                  ordre: { type: Type.STRING },
+                  famille: { type: Type.STRING },
+                  statut_iucn: { type: Type.STRING },
+                  phrase_descriptive: { type: Type.STRING },
+                  description_taxonomique: { type: Type.STRING },
+                  habitat: { type: Type.STRING },
+                  position_eau: { type: Type.STRING },
+                  zone_geo: { type: Type.STRING },
+                  alimentation: { type: Type.STRING },
+                  mode_de_vie: { type: Type.STRING },
+                  comportement: { type: Type.STRING },
+                  conseils_protection: { type: Type.STRING }
+                },
+                required: [
+                  "indices_visuels", "hypotheses", "comparaison_especes", "choix_final_raison", 
+                  "confiance", "justification_biologique", "risque_confusion", "indices_determinants", 
+                  "type", "nom_commun", "nom_scientifique", "regne", "embranchement", "classe", 
+                  "ordre", "famille", "statut_iucn", "phrase_descriptive", "description_taxonomique", 
+                  "habitat", "position_eau", "zone_geo", "alimentation", "mode_de_vie", "comportement",
+                  "conseils_protection"
+                ]
+              }
             },
-            required: ["est_aquatique", "message_validation", "organismes", "lecture_ecologique", "regard_plongeur", "limites_analyse"]
-          }
+            lecture_ecologique: {
+              type: Type.OBJECT,
+              properties: {
+                ecosysteme: { type: Type.STRING },
+                biodiversite: { type: Type.STRING },
+                interactions: { type: Type.STRING },
+                etat_milieu: { type: Type.STRING }
+              }
+            },
+            regard_plongeur: {
+              type: Type.OBJECT,
+              properties: {
+                debutant: { type: Type.STRING },
+                attentif: { type: Type.STRING },
+                mal_compris: { type: Type.STRING }
+              }
+            },
+            limites_analyse: { type: Type.STRING }
+          },
+          required: ["est_aquatique", "message_validation", "organismes", "lecture_ecologique", "regard_plongeur", "limites_analyse"]
         }
-      });
+      };
+
+      const performGen = async (modelName: string) => {
+        return await ai.models.generateContent({
+          model: modelName,
+          contents: { parts: [imagePart, textPart] },
+          config
+        });
+      };
+
+      let response;
+      try {
+        // Mode High Expert (Pro)
+        response = await performGen('gemini-1.5-pro');
+      } catch (proErr: any) {
+        console.warn("Diving Aware: Modèle Pro saturé, basculement vers Flash...", proErr);
+        if (proErr.message?.includes('429') || proErr.message?.includes('RESOURCE_EXHAUSTED') || proErr.message?.includes('limit')) {
+          // Mode Haute Disponibilité (Flash)
+          response = await performGen('gemini-1.5-flash');
+        } else {
+          throw proErr;
+        }
+      }
 
       const data = JSON.parse(response.text || '{}') as DiveAnalysis;
       
