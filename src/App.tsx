@@ -50,7 +50,11 @@ Vérifie si l'image représente une scène aquatique ou sous-marine. Si non, ré
 Langue : Réponds exclusivement dans la langue demandée par l'utilisateur (Français ou Anglais).
 Niveau : Expert Mondial.`;
 
-const isTeamMember = (email?: string | null) => email ? COLLABORATORS.includes(email) : false;
+const isTeamMember = (email?: string | null) => {
+  if (!email) return false;
+  const lowerEmail = email.toLowerCase();
+  return COLLABORATORS.map(e => e.toLowerCase()).includes(lowerEmail);
+};
 
 const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -242,14 +246,22 @@ export default function App() {
         } else {
           setUserUsage(data);
           // Check quota if NOT team and NOT premium
-          if (!isTeamMember(auth.currentUser?.email) && !data.isPremium && data.dailyCount >= DAILY_QUOTA_LIMIT) {
-            setIsQuotaExceeded(true);
-          }
+        const isTeam = isTeamMember(auth.currentUser?.email);
+        const isPremiumOrCenter = data.isPremium || data.isDiveCenter;
+        
+        if (isTeam || isPremiumOrCenter) {
+          setIsQuotaExceeded(false);
+        } else if (data.dailyCount >= DAILY_QUOTA_LIMIT) {
+          setIsQuotaExceeded(true);
+        } else {
+          setIsQuotaExceeded(false);
         }
-      } else {
-        console.log("No usage found, creating initial doc");
+      }
+    } else {
+      console.log("No usage found, creating initial doc");
         // Success payment but no doc yet
         const isPremium = paymentStatus === 'success';
+        const isTeam = isTeamMember(auth.currentUser?.email);
         const newData: UserStats = { userId, dailyCount: 0, lastAnalysisDate: today, isPremium };
         await setDoc(docRef, newData);
         setUserUsage(newData);
@@ -481,47 +493,48 @@ export default function App() {
 
       const performGen = async (modelName: string) => {
         try {
-          return await ai.models.generateContent({
+          const result = await ai.models.generateContent({
             model: modelName,
             contents: { parts: [imagePart, textPart] },
             config
           });
+          return result;
         } catch (err: any) {
-          // Si le modèle n'existe pas (404) ou est occupé (429), on propage pour le catch parent
+          // Si le modèle est occupé (429), on propage pour le catch parent
           throw err;
         }
       };
 
       let response;
-      const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
+      const modelsToTry = ['gemini-2.0-flash-exp', 'gemini-3-flash-preview', 'gemini-3.1-pro-preview', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'];
       let lastErr: any = null;
 
       for (const modelName of modelsToTry) {
         try {
           console.log(`Diving Aware: Tentative d'analyse avec ${modelName}...`);
           response = await performGen(modelName);
-          if (response) break;
+          if (response && response.text) break;
         } catch (err: any) {
           lastErr = err;
           const status = err.message || "";
-          if (status.includes('404') || status.includes('NOT_FOUND')) {
-            console.warn(`Diving Aware: Modèle ${modelName} non trouvé (404), passage au suivant...`);
+          console.warn(`Diving Aware: Échec avec ${modelName}:`, status);
+          if (status.includes('404') || status.includes('NOT_FOUND') || status.includes('501')) {
             continue;
           }
           if (status.includes('429') || status.includes('RESOURCE_EXHAUSTED') || status.includes('limit')) {
-            console.warn(`Diving Aware: Modèle ${modelName} saturé (429), passage au suivant...`);
             continue;
           }
-          // Pour les autres erreurs, on arrête et on throw
+          // Pour les autres erreurs critiques, on arrête
           throw err;
         }
       }
 
-      if (!response) {
+      if (!response || !response.text) {
         throw lastErr || new Error("Aucun modèle d'IA n'est disponible actuellement.");
       }
 
-      const data = JSON.parse(response.text || '{}') as DiveAnalysis;
+      const responseText = response.text;
+      const data = JSON.parse(responseText || '{}') as DiveAnalysis;
       
       if (data.est_aquatique === false) {
         setError(data.message_validation || (language === 'fr' 
