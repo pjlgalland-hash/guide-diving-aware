@@ -343,9 +343,22 @@ export default function App() {
   const analyzeImage = async () => {
     if (!imageFile || !user) return;
 
-    if (!isTeamMember(user.email) && !userUsage?.isPremium && !userUsage?.isDiveCenter && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === new Date().toISOString().split('T')[0]) {
-      setIsQuotaExceeded(true);
-      return;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Si l'utilisateur est un membre de l'équipe, on ignore les quotas
+    const isTeam = isTeamMember(user.email);
+    
+    // Si on détecte un changement de jour par rapport à l'état local, on reset localement avant de processeur
+    if (userUsage && userUsage.lastAnalysisDate !== today) {
+      console.log("Diving Aware: Détection nouveau jour dans analyzeImage, reset local...");
+      setUserUsage({ ...userUsage, dailyCount: 0, lastAnalysisDate: today });
+      setIsQuotaExceeded(false);
+    } else {
+      // Sinon on vérifie normalement
+      if (!isTeam && !userUsage?.isPremium && !userUsage?.isDiveCenter && userUsage && userUsage.dailyCount >= DAILY_QUOTA_LIMIT && userUsage.lastAnalysisDate === today) {
+        setIsQuotaExceeded(true);
+        return;
+      }
     }
 
     try {
@@ -467,25 +480,45 @@ export default function App() {
       };
 
       const performGen = async (modelName: string) => {
-        return await ai.models.generateContent({
-          model: modelName,
-          contents: { parts: [imagePart, textPart] },
-          config
-        });
+        try {
+          return await ai.models.generateContent({
+            model: modelName,
+            contents: { parts: [imagePart, textPart] },
+            config
+          });
+        } catch (err: any) {
+          // Si le modèle n'existe pas (404) ou est occupé (429), on propage pour le catch parent
+          throw err;
+        }
       };
 
       let response;
-      try {
-        // Mode High Expert (Pro)
-        response = await performGen('gemini-1.5-pro');
-      } catch (proErr: any) {
-        console.warn("Diving Aware: Modèle Pro saturé, basculement vers Flash...", proErr);
-        if (proErr.message?.includes('429') || proErr.message?.includes('RESOURCE_EXHAUSTED') || proErr.message?.includes('limit')) {
-          // Mode Haute Disponibilité (Flash)
-          response = await performGen('gemini-1.5-flash');
-        } else {
-          throw proErr;
+      const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
+      let lastErr: any = null;
+
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`Diving Aware: Tentative d'analyse avec ${modelName}...`);
+          response = await performGen(modelName);
+          if (response) break;
+        } catch (err: any) {
+          lastErr = err;
+          const status = err.message || "";
+          if (status.includes('404') || status.includes('NOT_FOUND')) {
+            console.warn(`Diving Aware: Modèle ${modelName} non trouvé (404), passage au suivant...`);
+            continue;
+          }
+          if (status.includes('429') || status.includes('RESOURCE_EXHAUSTED') || status.includes('limit')) {
+            console.warn(`Diving Aware: Modèle ${modelName} saturé (429), passage au suivant...`);
+            continue;
+          }
+          // Pour les autres erreurs, on arrête et on throw
+          throw err;
         }
+      }
+
+      if (!response) {
+        throw lastErr || new Error("Aucun modèle d'IA n'est disponible actuellement.");
       }
 
       const data = JSON.parse(response.text || '{}') as DiveAnalysis;
@@ -500,14 +533,23 @@ export default function App() {
         await incrementUsage(user.uid);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Diving Aware Error:", err);
       let errorMessage = err.message || "Une erreur est survenue lors de l'analyse.";
       
-      // Intercept quota / region errors from Google API
-      if (errorMessage.includes('429') || errorMessage.includes('limit: 0') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-        errorMessage = "Service temporairement indisponible (Quota atteint). Veuillez réessayer plus tard.";
-      } else if (errorMessage.includes('503')) {
-        errorMessage = "Le serveur d'analyse est actuellement surchargé. Veuillez réessayer dans quelques instants.";
+      // Intercept quota / region / 404 errors
+      const msg = errorMessage.toLowerCase();
+      if (msg.includes('429') || msg.includes('limit') || msg.includes('quota') || msg.includes('resource_exhausted')) {
+        errorMessage = language === 'fr' 
+          ? "Le service d'identification est actuellement saturé par de nombreuses demandes. Veuillez patienter une minute et réessayer. (Quota d'API atteint sur le serveur gratuit)."
+          : "The identification service is currently saturated with many requests. Please wait a minute and try again. (API Quota reached on free server).";
+      } else if (msg.includes('503')) {
+        errorMessage = language === 'fr' 
+          ? "Le serveur d'analyse est actuellement surchargé ou en maintenance. Veuillez réessayer dans quelques instants."
+          : "The analysis server is currently overloaded or undergoing maintenance. Please try again in a few moments.";
+      } else if (msg.includes('404') || msg.includes('not found')) {
+        errorMessage = language === 'fr'
+          ? "Erreur technique : Le modèle d'analyse n'a pas été trouvé. Veuillez contacter l'administrateur."
+          : "Technical error: Analysis model not found. Please contact the administrator.";
       }
       
       setError(errorMessage);
